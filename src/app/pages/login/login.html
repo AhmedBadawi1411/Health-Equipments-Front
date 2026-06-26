@@ -1,0 +1,72 @@
+<div class="page-wrapper">
+  <div class="right-section">
+    <div class="row flex flex-row gap-2">
+      <div class="icon-wrapper bg-blue w-fit p-2!">
+        <img
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iLTIgLTIgMjQgMjQiPgoJPHBhdGggZD0iTS0yIC0yaDI0djI0SC0yeiIgZmlsbD0ibm9uZSIgLz4KCTxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik03IDEyLjkxN3YuNTgzYTQuNSA0LjUgMCAxIDAgOSAwdi0xLjY3YTMuMDAxIDMuMDAxIDAgMSAxIDIgMHYxLjY3YTYuNSA2LjUgMCAxIDEtMTMgMHYtLjU4M0E2IDYgMCAwIDEgMCA3VjJhMiAyIDAgMCAxIDItMmgxYTEgMSAwIDEgMSAwIDJIMnY1YTQgNCAwIDEgMCA4IDBWMkg5YTEgMSAwIDEgMSAwLTJoMWEyIDIgMCAwIDEgMiAydjVhNiA2IDAgMCAxLTUgNS45MTdNMTcgMTBhMSAxIDAgMSAwIDAtMmExIDEgMCAwIDAgMCAyIiAvPgo8L3N2Zz4K"
+          alt=""
+          srcset=""
+        />
+      </div>
+      <div class="col flex flex-col">
+        <p class="font-semibold text-[18px] text-(--k-primary-300)">
+          المنصة الوطنية لإدارة المعدات الصحية
+        </p>
+        <p class="text-gray-500 text-[13px]">نحو إدارة رقمية متكاملة للتكنولوجيا الصحية في ليبيا</p>
+      </div>
+    </div>
+    <span>
+      <p class="font-bold text-[24px]">مرحبا بك</p>
+      <p class="text-gray-600">
+        يرجى إدخال بيانات الاعتماد الخاصة بك للوصول إلى لوحة إدارة النظام.
+      </p>
+    </span>
+
+    <div class="login-form">
+      <span>
+        <p class="text-gray-600 font-semibold">البريد الالكتروني</p>
+        <p-iconfield>
+          <p-inputicon class="pi pi-envelope" />
+          <input
+            class="bg-gray-100! border-0! placeholder:text-sm h-11"
+            type="text"
+            pInputText
+            [fluid]="true"
+            placeholder="example@hospital.gov"
+            [(ngModel)]="email"
+          />
+        </p-iconfield>
+      </span>
+      <span>
+        <p class="text-gray-600 font-semibold">كلمة المرور</p>
+        <p-iconfield>
+          <p-inputicon class="pi pi-lock" />
+          <input
+            class="bg-gray-100! border-0! placeholder:text-sm h-11"
+            autocomplete="off"
+            type="password"
+            [fluid]="true"
+            pInputText
+            placeholder="ادخل كلمة المرور"
+            [(ngModel)]="password"
+          />
+        </p-iconfield>
+      </span>
+      @if (errorMessage != '') {
+        <p-message severity="error" size="small">{{ errorMessage }}</p-message>
+      }
+    </div>
+
+    <button pButton class="w-full! h-13.5" (click)="login()" [loading]="loading()" >
+      <i class="pi pi-sign-in" pButtonIcon></i>
+      <span pButtonLabel>تسجيل الدخول الي لوحة التحكم</span>
+    </button>
+  </div>
+  <div class="left-section">
+    <img
+      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDezk4p5G9OnD0p5m3pePgdGIq-QjLBIoBLlr-3u3paSVdiqvFY-XAqTFbdSubJroo0phxQlXtJ_q3Ph-gybd_0uE32x4nhv65aTu0kKyh3sLfOw_kQhdxXQnsJICKjfLE9W3vZw9rH-Sjz2PWhGrG7oyvO7SDXSjxRrFVukxvhc-LrK7_wIOJ6YudKE4zXOzSXgIC9mgxfNQsIXNVNFgyYi_H0IdJQ6vlNQtRqIFH7SfTrBmAAhTuSG5RBexczBiq5X2o5P0Y3H50"
+      alt=""
+      class="bg-img"
+    />
+  </div>
+</div>

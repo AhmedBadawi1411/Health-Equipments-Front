@@ -1,0 +1,532 @@
+/* ═══════════════════════════════════════════════════════
+   spatial-analysis.css  — COMPLETE FILE
+   ═══════════════════════════════════════════════════════ */
+
+/* ── 1. Force Leaflet marker icons to load correctly ── */
+/* Without this the default marker PNGs break in Angular */
+
+/* ── 2. Host & Layout ─────────────────────────────────── */
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;          /* ← host must propagate height */
+}
+
+.spatial-wrapper {
+  display: flex;
+  width: 100%;
+  height: 100%;   /* adjust 64px to your topbar height */
+  overflow: hidden;
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+}
+
+/* ── 3. Map area ─────────────────────────────────────── */
+.map-area {
+  flex: 1;
+  position: relative;
+  min-width: 0;          /* flex child shrink fix */
+}
+
+#map {
+  width: 100%;
+  height: 100%;          /* ← THIS is why the map was blank */
+  z-index: 0;
+}
+
+/* ── 4. Sidebar ──────────────────────────────────────── */
+.sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #e2e8f0;  /* RTL → right border */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1;
+  margin-right: 16px;
+  box-shadow: -2px 0 12px rgba(0,0,0,.06);
+}
+
+/* ── 5. Sidebar Header ───────────────────────────────── */
+.sidebar-header {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+.sidebar-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-icon {
+  font-size: 1.2rem;
+  color: #1975D2;
+}
+
+.sidebar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.sidebar-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 4px 0 0;
+}
+
+/* ── 6. KPI Strip ────────────────────────────────────── */
+.kpi-strip {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.kpi-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.kpi-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.kpi-lbl {
+  font-size: 9px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.kpi-divider {
+  width: 1px;
+  height: 28px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+/* ── 7. Panel Tabs ───────────────────────────────────── */
+.panel-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.panel-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 11px;
+  font-family: 'Cairo', sans-serif;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+
+.panel-tab.active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.panel-tab:hover:not(.active) { background: #f1f5f9; }
+
+/* ── 8. Scrollable panel body ────────────────────────── */
+.sidebar > *:not(.sidebar-header):not(.kpi-strip):not(.panel-tabs):not(.fit-btn) {
+  overflow-y: auto;
+}
+
+/* ── 9. Filter Section ───────────────────────────────── */
+.filter-section {
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.filter-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+/* Color mode buttons */
+.color-mode-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mode-btn {
+  width: 100%;
+  padding: 7px 10px;
+  text-align: right;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  font-family: 'Cairo', sans-serif;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.mode-btn.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.mode-btn:hover:not(.active) { background: #f8fafc; }
+
+/* ── 10. Fit Bounds Button ───────────────────────────── */
+.fit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 12px;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: #1975D2;
+  color: #fff;
+  font-size: 13px;
+  font-family: 'Cairo', sans-serif;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+
+.fit-btn:hover { background: #1558a8; }
+
+/* ── 11. Legend Section ──────────────────────────────── */
+.legend-section {
+  padding: 10px 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.legend-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-txt {
+  font-size: 12px;
+  color: #475569;
+}
+
+.legend-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.legend-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 10px 0;
+}
+
+.legend-line {
+  display: inline-block;
+  width: 22px;
+  height: 0;
+  border-top: 2px dashed #94a3b8;
+  vertical-align: middle;
+}
+
+.legend-line.red  { border-color: #ef4444; }
+
+.legend-poly {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background: rgba(139,92,246,.15);
+  border: 1.5px solid #8b5cf6;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.legend-diamond {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  vertical-align: middle;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+
+/* ── 12. Analytics Panel ─────────────────────────────── */
+.insight-cards {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px 4px;
+  flex-shrink: 0;
+}
+
+.insight-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.insight-card.danger {
+  background: #fff5f5;
+  border-color: #fecaca;
+}
+
+.insight-icon {
+  font-size: 18px;
+  color: #3b82f6;
+}
+
+.insight-card.danger .insight-icon { color: #ef4444; }
+
+.insight-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.insight-lbl {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.analytics-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.analytic-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f8fafc;
+  transition: background .12s;
+}
+
+.analytic-item:hover { background: #f8fafc; }
+
+.analytic-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.analytic-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.analytic-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.analytic-badge.heat    { background: #fef3c7; color: #92400e; }
+.analytic-badge.cluster { background: #dbeafe; color: #1e40af; }
+.analytic-badge.buffer  { background: #d1fae5; color: #065f46; }
+.analytic-badge.gap     { background: #ede9fe; color: #5b21b6; }
+.analytic-badge.nearest { background: #fee2e2; color: #991b1b; }
+.analytic-badge.centroid{ background: #cffafe; color: #155e75; }
+
+.analytic-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.analytic-desc {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── 13. Toggle Switch ───────────────────────────────── */
+.toggle-switch {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 99px;
+  transition: background .2s;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+
+.toggle-switch input:checked + .toggle-slider { background: #3b82f6; }
+.toggle-switch input:checked + .toggle-slider::after { transform: translateX(16px); }
+
+/* ── 14. Buffer Slider ───────────────────────────────── */
+.buffer-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #475569;
+  direction: rtl;
+}
+
+.buffer-slider { flex: 1; accent-color: #3b82f6; }
+
+/* ── 15. Nearest legend mini ─────────────────────────── */
+.nearest-legend-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 10px;
+  color: #475569;
+  flex-wrap: wrap;
+}
+
+.nearest-legend-mini .dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+/* ── 16. Insight Box ─────────────────────────────────── */
+.insight-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  direction: rtl;
+}
+
+.insight-box.warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.insight-box .pi { font-size: 16px; margin-top: 2px; }
+.insight-box-title { font-size: 11px; opacity: .8; }
+.insight-box-val   { font-size: 12px; font-weight: 700; margin-top: 2px; }
+
+/* ── 17. PrimeNG Select override (inside sidebar) ─────── */
+.filter-section p-select .p-select {
+  width: 100%;
+  font-size: 12px;
+  font-family: 'Cairo', sans-serif;
+}
+
+/* ── 18. Leaflet popup RTL fix ───────────────────────── */
+.leaflet-popup-content {
+  direction: rtl;
+  font-family: 'Cairo', sans-serif;
+}
+
+/* ── 19. Leaflet z-index fix (sits below PrimeNG overlays) */
+.leaflet-pane         { z-index: 0 !important; }
+.leaflet-top,
+.leaflet-bottom       { z-index: 1 !important; }
+.leaflet-control      { z-index: 2 !important; }
+
+/* ── 20. MarkerCluster CSS (copy if not imported globally) */
+/* If you imported leaflet.markercluster CSS in angular.json, skip this block */
+.marker-cluster-small         { background-color: rgba(181,226,140,.6); }
+.marker-cluster-small div     { background-color: rgba(110,204,57,.6);  }
+.marker-cluster-medium        { background-color: rgba(241,211,87,.6);  }
+.marker-cluster-medium div    { background-color: rgba(240,194,12,.6);  }
+.marker-cluster-large         { background-color: rgba(253,156,115,.6); }
+.marker-cluster-large div     { background-color: rgba(241,128,23,.6);  }
+.marker-cluster              { border-radius: 20px; }
+.marker-cluster div          { width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 15px; font: bold 12px/30px Helvetica,Arial,sans-serif; }
+.marker-cluster span         { line-height: 30px; }

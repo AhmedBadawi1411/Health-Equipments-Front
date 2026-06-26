@@ -1,0 +1,23 @@
+<a
+  *ngIf="route"
+  [routerLink]="disabled ? null : route"
+  routerLinkActive="active"
+  class="btn-wrapper flex flex-row gap-4"
+  [class.disabled]="disabled"
+>
+  <iconify-icon [attr.icon]="iconUrl" class="icon"></iconify-icon>
+  <p>{{ textContent }}</p>
+  @if (disabled) {
+    <p class=" text-sm text-orange-300 mr-auto!">قيد التطوير</p>
+  }
+</a>
+
+<div
+  *ngIf="!route"
+  (click)="onClicked()"
+  class="btn-wrapper flex flex-row gap-4"
+  [class.disabled]="disabled"
+>
+  <iconify-icon [attr.icon]="iconUrl" class="icon"></iconify-icon>
+  <p>{{ textContent }}</p>
+</div>

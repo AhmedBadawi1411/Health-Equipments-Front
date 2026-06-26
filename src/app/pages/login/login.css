@@ -1,0 +1,55 @@
+.icon-wrapper {
+        width: 44px;
+        height: 44px;
+        background-color: var(--k-primary-300);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        -webkit-border-radius: 4px;
+        -moz-border-radius: 4px;
+        -ms-border-radius: 4px;
+        -o-border-radius: 4px;
+}
+
+.page-wrapper {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        height: 100%;
+        justify-content: space-between;
+}
+
+.right-section {
+        padding: 5%;
+        width: 50vw;
+        display: flex;
+        flex-direction: column;
+        gap: 6vh;
+
+        justify-content: center;
+}
+
+.left-section {
+
+        width: 50vw;
+
+}
+
+.left-section img {
+        height: 100%;
+        width: 100%;
+        object-fit: cover;
+}
+
+.login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 3vh;
+}
+
+.login-form span {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+}

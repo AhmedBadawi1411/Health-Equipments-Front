@@ -1,0 +1,84 @@
+<div class="app-layout">
+  <header
+    class="header flex flex-row items-center justify-between px-6! border-b border-surface-200 dark:border-surface-800 shadow-sm z-10"
+  >
+    <!-- Right side: Breadcrumbs and Search -->
+    <div class="flex items-center justify-between gap-6 flex-1">
+      <div class="flex items-center gap-2 text-sm text-surface-500 font-medium">
+        <span class="text-surface-400">الرئيسية</span>
+        <i class="pi pi-angle-left text-[10px] text-surface-400"></i>
+        <app-bread-crump></app-bread-crump>
+        <!-- <span class="text-surface-800 dark:text-surface-100 font-semibold">{{  }}</span> -->
+      </div>
+
+      <!-- Search Box -->
+      <!-- <div class="relative hidden md:block search-box">
+        <i class="pi pi-search absolute right-3 top-1/2 -translate-y-1/2 text-surface-400"></i>
+        <input
+          type="text"
+          placeholder="بحث عن أصل، منشأة أو طلب..."
+          class="bg-(--k-forground-color)! h-9! w-64! pr-9! pl-3! rounded-lg text-xs focus:outline-none focus:border-(--k-primary) focus:ring-1 focus:ring-(--k-primary)"
+        />
+      </div> -->
+      <div></div>
+    </div>
+
+    <!-- Left side: Meta details (Date, Notifications, User info) -->
+    <div class="flex items-center gap-6">
+      <!-- Current Date -->
+      <div
+        class="hidden lg:flex items-center gap-2 text-xs text-surface-500 font-medium bg-surface-50 dark:bg-surface-950 px-3! py-1.5! rounded-lg"
+      >
+        <i class="pi pi-calendar-clock text-(--k-primary)"></i>
+        <span>{{ getFormattedDate() }}</span>
+      </div>
+
+      <!-- Notifications -->
+      <div
+        class="relative cursor-pointer p-2! rounded-lg hover:bg-surface-50 dark:hover:bg-surface-950 text-surface-600 dark:text-surface-300"
+      >
+        <i class="pi pi-bell text-lg"></i>
+        <span
+          class="absolute top-1 left-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white"
+          >3</span
+        >
+      </div>
+
+      <!-- User Menu -->
+      <div class="flex items-center gap-3 border-r border-surface-200 dark:border-surface-800 pr-6">
+        <div class="flex flex-col text-right">
+          <span class="text-sm font-semibold text-surface-800 dark:text-surface-100">{{
+            authService.user()?.name
+          }}</span>
+          <span class="text-[10px] text-surface-500 font-medium">{{
+            authService.user()?.role?.name || 'مدير النظام'
+          }}</span>
+        </div>
+        <div
+          class="w-9 h-9 rounded-full bg-(--k-primary-opc-100) flex items-center justify-center text-(--k-primary) font-bold text-sm select-none"
+        >
+          {{ authService.user()?.name?.substring(0, 2) || 'أد' }}
+        </div>
+
+        <!-- Log Out Shortcut Icon -->
+        <button
+          (click)="logout()"
+          title="تسجيل الخروج"
+          class="p-2! rounded-lg text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer transition-colors"
+        >
+          <i class="pi pi-sign-out text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <app-side-bar></app-side-bar>
+  </aside>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="footer">© 2026 منصة إدارة التجهيزات الطبية الوطنية</footer>
+</div>

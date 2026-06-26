@@ -1,1 +1,201 @@
 /* You can add global styles to this file, and also import other style files */
+
+@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&display=swap');
+@import 'tailwindcss';
+@import "primeicons/primeicons.css";
+@import "./customPrime.css";
+
+:root {
+        --k-hover: #F2F9F9;
+
+        --k-primary: #1975D2;
+        --k-primary-opc-100: #1976d236;
+        --k-primary-dark-200: #00315F;
+        --k-primary-dark-100: #004787;
+        --k-primary-dark-300: #001C3B;
+        --k-primary-100: #1E78D5;
+        --k-primary-200: #005FB0;
+        --k-primary-300: #005FB0;
+
+        --k-secondary: #475F84;
+        --k-secondary-dark-100: #001C3B;
+        --k-secondary-dark-200: #173153;
+        --k-secondary-dark-300: #001C3B;
+        --k-secondary-100: #7A92BA;
+        --k-secondary-200: #60789E;
+        --k-secondary-300: #475F84;
+
+        --k-secondary-shade: #7a91ba6e;
+
+        --k-tertiary: #934600;
+        --k-tertiary-dark-100: #733500;
+        --k-tertiary-dark-200: #512400;
+        --k-tertiary-dark-300: #311300;
+        --k-tertiary-100: #D57936;
+        --k-tertiary-200: #B6601F;
+        --k-tertiary-300: #964903;
+
+        --k-font-light: #FFFFFF;
+        --k-font-light-200: #EFF0F9;
+        --k-font-light-300: #C4C6CE;
+
+        --k-font-dark: #2D3037;
+        --k-font-dark-200: #181C22;
+        --k-font-dark-300: #000000;
+
+        --k-background-color: #F8FAFB;
+        --k-forground-color: #FFFFFF;
+        --k-secondary-forground-color:#EFF4FF;
+
+        --k-border: #E2E8F0;
+
+}
+
+* {
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+
+        font-family: "Alexandria", sans-serif;
+}
+
+html {
+        direction: rtl;
+        font-size: 14px;
+}
+
+body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+}
+
+app-root {
+        display: block;
+        height: 100vh;
+        width: 100vw;
+}
+
+.p-button {
+        border-radius: 4px !important;
+        -webkit-border-radius: 4px !important;
+        -moz-border-radius: 4px !important;
+        -ms-border-radius: 4px !important;
+        -o-border-radius: 4px !important;
+
+}
+
+.p-button-label {
+
+        font-size: 1rem !important;
+        font-weight: 400 !important;
+}
+
+.p-placeholder,
+.p-inputtext::placeholder{
+        color: var(--color-gray-400) !important;
+        font-size: 12px !important;
+}
+
+.p-select {
+  width: 100%;
+}
+
+app-text-box-with-label,
+app-select-with-label{
+        width: 100%;
+}
+
+.p-select {
+        height: 40px;
+}
+
+body .p-component {
+    font-size: 0.9rem !important; 
+}
+
+.p-breadcrumb {
+  direction: rtl !important;
+  background-color: transparent !important;
+}
+
+.p-breadcrumb .p-breadcrumb-separator {
+  transform: rotate(180deg);
+}
+button {
+        cursor: pointer;
+}
+
+.p-component.p-inputwrapper.p-paginator-rpp-dropdown.p-select {
+        width: auto;
+}
+
+.filters-wrapper {
+        background-color: var(--k-forground-color);
+        padding: 16px;
+        margin-bottom: 32px;
+        border-radius: 16px;
+        -webkit-border-radius: 16px;
+        -moz-border-radius: 16px;
+        -ms-border-radius: 16px;
+        -o-border-radius: 16px;
+}
+
+.card{
+        border-radius: 16px;
+        -webkit-border-radius: 16px;
+        -moz-border-radius: 16px;
+        -ms-border-radius: 16px;
+        -o-border-radius: 16px;
+}
+
+.form-wrapper{
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2,1fr);
+        gap: 16px;
+        padding: 16px;
+        background-color: var(--k-forground-color);
+        border-radius: 16px;
+        -webkit-border-radius: 16px;
+        -moz-border-radius: 16px;
+        -ms-border-radius: 16px;
+        -o-border-radius: 16px;
+        margin-top: 32px;
+}
+
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  font-family: 'Alexandria', sans-serif;
+  -webkit-transition: background 0.18s, color 0.18s;
+  -moz-transition: background 0.18s, color 0.18s;
+  -ms-transition: background 0.18s, color 0.18s;
+  -o-transition: background 0.18s, color 0.18s;
+}
+
+.tab-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.tab-btn.active {
+  background: var(--k-primary, #1975D2);
+  color: #fff;
+  font-weight: 600;
+}
+
+.tab-btn.active i {
+  color: #fff;
+}

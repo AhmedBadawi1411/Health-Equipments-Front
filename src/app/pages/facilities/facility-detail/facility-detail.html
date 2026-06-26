@@ -1,0 +1,175 @@
+<p-toast position="bottom-right"></p-toast>
+
+<app-section-header
+  actionLabel="الرجوع للمنشآت"
+  sectionTitle="تعديل بيانات الجهة الصحية"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="goBack()"
+></app-section-header>
+
+@if (facility()) {
+  <div class="flex flex-col gap-6 mt-6">
+    <div class="form-wrapper flex flex-col gap-6">
+      <div
+        class="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 border-b border-gray-100 dark:border-surface-800 pb-3!"
+      >
+        <i class="pi pi-building text-(--k-primary)"></i>
+        <span>تفاصيل الجهة الطبية</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Facility Name -->
+        <div class="flex flex-col gap-2">
+          <label for="facilityName" class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >اسم الجهة الصحية</label
+          >
+          <p-iconfield class="w-full">
+            <input
+              id="facilityName"
+              type="text"
+              pInputText
+              class="w-full h-11!"
+              placeholder="مثال: مستشفى طرابلس المركزي"
+              [(ngModel)]="profileForm.facilityName"
+            />
+            <p-inputicon class="pi pi-building" />
+          </p-iconfield>
+        </div>
+
+        <!-- Facility Type -->
+        <div class="flex flex-col gap-2">
+          <label for="facilityType" class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >نوع الجهة</label
+          >
+          <p-select
+            id="facilityType"
+            [options]="facilityTypes"
+            optionLabel="name"
+            optionValue="value"
+            placeholder="اختر النوع"
+            class="w-full h-11!"
+            [(ngModel)]="profileForm.facilityType"
+          ></p-select>
+        </div>
+
+        <!-- Region -->
+        <div class="flex flex-col gap-2">
+          <label for="facilityRegion" class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >المنطقة</label
+          >
+          <p-select
+            id="facilityRegion"
+            [options]="facilitiesService.regions()"
+            optionLabel="regionName"
+            optionValue="regionID"
+            [filter]="true"
+            filterBy="regionName"
+            placeholder="اختر المنطقة"
+            class="w-full h-11!"
+            [(ngModel)]="profileForm.regionID"
+          ></p-select>
+        </div>
+
+        <!-- Facility Level -->
+        <div class="flex flex-col gap-2">
+          <label for="facilityLevel" class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >مستوى الجهة</label
+          >
+          <p-select
+            id="facilityLevel"
+            [options]="facilityLevels"
+            optionLabel="name"
+            optionValue="value"
+            placeholder="اختر المستوى"
+            class="w-full h-11!"
+            [(ngModel)]="profileForm.facilityLevel"
+          ></p-select>
+        </div>
+
+        <!-- Capacity -->
+        <div class="flex flex-col gap-2">
+          <label for="capacity" class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >السعة السريرية</label
+          >
+          <p-iconfield class="w-full">
+            <input
+              id="capacity"
+              type="number"
+              pInputText
+              class="w-full h-11!"
+              placeholder="مثال: 150"
+              [(ngModel)]="profileForm.capacity"
+              min="0"
+            />
+            <p-inputicon class="pi pi-bars" />
+          </p-iconfield>
+        </div>
+
+        <!-- Inventory Status -->
+        <div class="flex flex-col gap-2">
+          <label
+            for="inventoryStatus"
+            class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >حالة جرد الأصول</label
+          >
+          <p-select
+            id="inventoryStatus"
+            [options]="inventoryStatusOptions"
+            optionLabel="name"
+            optionValue="value"
+            placeholder="اختر حالة الجرد"
+            class="w-full h-11!"
+            [(ngModel)]="profileForm.inventoryStatus"
+          ></p-select>
+        </div>
+
+        <!-- Address -->
+        <div class="flex flex-col gap-2 md:col-span-2">
+          <label for="address" class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >العنوان بالتفصيل</label
+          >
+          <p-iconfield class="w-full">
+            <input
+              id="address"
+              type="text"
+              pInputText
+              class="w-full h-11!"
+              placeholder="مثال: شارع الزاوية، طرابلس"
+              [(ngModel)]="profileForm.address"
+            />
+            <p-inputicon class="pi pi-map-marker" />
+          </p-iconfield>
+        </div>
+
+        <!-- Is Approved Checkbox -->
+        <div class="flex items-center gap-3 py-2 md:col-span-2">
+          <p-checkbox
+            id="isApproved"
+            [binary]="true"
+            [(ngModel)]="profileForm.isApproved"
+          ></p-checkbox>
+          <label
+            for="isApproved"
+            class="text-sm font-semibold text-gray-800 dark:text-gray-200 cursor-pointer select-none"
+          >
+            اعتماد الجهة الصحية (منشأة معتمدة وموثقة في النظام)
+          </label>
+        </div>
+
+      </div>
+
+      
+      <!-- Action Button -->
+      <div class="flex justify-end mt-4 border-t border-gray-100 dark:border-surface-800 pt-4">
+        <button
+          pButton
+          label="حفظ التعديلات"
+          icon="pi pi-save"
+          class="w-full md:w-auto h-12! px-8! font-bold"
+          [loading]="isSaving"
+          (click)="saveProfile()"
+        ></button>
+      </div>
+    </div>
+  </div>
+}

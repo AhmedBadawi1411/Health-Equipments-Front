@@ -1,0 +1,105 @@
+<p-toast position="bottom-right"></p-toast>
+
+<div class="assets-layout">
+  <div class="header">
+    <app-section-header
+      (onAddClickedEvent)="onAdd()"
+      sectionTitle="إدارة الأصول الطبية"
+      actionLabel="إضافة أصل جديد"
+    ></app-section-header>
+  </div>
+
+  <div class="filters-wrapper flex flex-row gap-4 items-end mt-4! flex-wrap">
+    <app-text-box-with-label class="flex-1!" [(value)]="searchText"></app-text-box-with-label>
+    <app-select-with-label
+      class="flex-1!"
+      [(selectedItem)]="selectedFacility"
+      [optionsList]="facilityOptions()"
+      label="الجهة"
+      placeholder="اختر الجهة"
+    ></app-select-with-label>
+    <app-select-with-label
+      class="flex-1!"
+      [(selectedItem)]="selectedStatus"
+      [optionsList]="statusOptions"
+      label="حالة الأصل"
+      placeholder="اختر الحالة"
+    ></app-select-with-label>
+    <app-select-with-label
+      class="flex-1!"
+      [(selectedItem)]="selectedType"
+      [optionsList]="typeOptions()"
+      label="نوع الجهاز"
+      placeholder="اختر النوع"
+    ></app-select-with-label>
+    <app-select-with-label
+      class="flex-1!"
+      [(selectedItem)]="selectedSupplier"
+      [optionsList]="supplierOptions()"
+      label="المورد"
+      placeholder="اختر المورد"
+    ></app-select-with-label>
+
+    <div class="pb-1!">
+      <p-button
+        icon="pi pi-refresh"
+        label="إعادة ضبط"
+        severity="secondary"
+        (click)="resetFilters()"
+        class="h-10!"
+      />
+    </div>
+  </div>
+
+  <div class="card mt-4!">
+    <p-table
+      [value]="filteredAssets()"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 30]"
+    >
+      <ng-template #header>
+        <tr>
+          <th>الجهة</th>
+          <th>القسم</th>
+          <th>نوع الجهاز</th>
+          <th>الرقم التسلسلي</th>
+          <th>المورد</th>
+          <th>تاريخ الشراء</th>
+          <th>تاريخ التركيب</th>
+          <th>الحالة</th>
+          <th>الإجراءات</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td>{{ facilitiesService.facilitiesMap().get(item.facilityId) }}</td>
+          <td>{{ facilitiesService.departmentsMap().get(item.departmentId) }}</td>
+          <td>{{ assetsService.assetMasterMap().get(item.equipmentTypeId) }}</td>
+          <td>{{ item.serialNumber }}</td>
+          <td>{{ assetsHelper.suppliersMap().get(item.supplierId) || '-' }}</td>
+          <td>{{ item.purchaseDate | date }}</td>
+          <td>{{ item.installationDate | date }}</td>
+          <td>{{ equipmentStatusMap.get(item.statusId) || '-' }}</td>
+          <td>
+            <div class="flex flex-row gap-2 justify-center">
+              <p-button
+                icon="pi pi-pencil"
+                (click)="editAsset(item.assetId)"
+                severity="secondary"
+                rounded
+              />
+              <p-button
+                icon="pi pi-trash"
+                (click)="deleteAsset(item.assetId)"
+                severity="danger"
+                rounded
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

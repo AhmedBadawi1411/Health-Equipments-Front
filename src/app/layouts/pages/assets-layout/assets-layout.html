@@ -1,0 +1,59 @@
+<div class="assets-module-container">
+  <div
+    class="px-4! py-2!   bg-white border-b rounded-xl! border-gray-100 flex flex-row justify-center items-center  gap-4"
+  >
+    <nav
+      class="assets-tabs flex flex-row flex-wrap gap-1 "
+    >
+      <a
+        routerLink="/assets"
+        [routerLinkActiveOptions]="{ exact: true }"
+        routerLinkActive="active"
+        class="tab-btn"
+      >
+        الأصول الطبية
+      </a>
+      <a
+        routerLink="/assets/equipments"
+        routerLinkActive="active"
+        class="tab-btn"
+      >
+        أنواع الأجهزة
+      </a>
+      <a
+        routerLink="/assets/categories"
+        routerLinkActive="active"
+        class="tab-btn"
+      >
+        الفئات العلمية
+      </a>
+      <a
+        routerLink="/assets/manufacturers"
+        routerLinkActive="active"
+        class="tab-btn"
+      >
+        الشركات المصنعة
+      </a>
+      <a
+        routerLink="/assets/suppliers"
+        routerLinkActive="active"
+        class="tab-btn"
+      >
+        الموردون
+      </a>
+      <a
+        routerLink="/assets/contracts"
+        routerLinkActive="active"
+        class="tab-btn"
+      >
+        عقود الصيانة
+      </a>
+    </nav>
+    <!-- Secondary Tab Navigation -->
+  </div>
+  <!-- <app-bread-crump></app-bread-crump> -->
+
+  <div class="assets-content-wrapper">
+    <router-outlet></router-outlet>
+  </div>
+</div>

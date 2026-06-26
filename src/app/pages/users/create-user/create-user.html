@@ -1,0 +1,88 @@
+<p-toast position="bottom-right"></p-toast>
+
+<app-section-header
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="إضافة مستخدم جديد"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="goBack()"
+></app-section-header>
+
+<div class="form-wrapper mt-4!">
+  <!-- Name -->
+  <div class="flex flex-col gap-2">
+    <label for="userName">الاسم الكامل</label>
+    <p-iconfield class="w-full">
+      <input
+        id="userName"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="أدخل الاسم الكامل للمستخدم"
+        [(ngModel)]="userForm.name"
+      />
+      <p-inputicon class="pi pi-user" />
+    </p-iconfield>
+  </div>
+
+  <!-- Email -->
+  <div class="flex flex-col gap-2">
+    <label for="userEmail">البريد الإلكتروني</label>
+    <p-iconfield class="w-full">
+      <input
+        id="userEmail"
+        type="email"
+        pInputText
+        class="w-full text-left"
+        placeholder="email@example.com"
+        [(ngModel)]="userForm.email"
+      />
+      <p-inputicon class="pi pi-envelope" />
+    </p-iconfield>
+  </div>
+
+  <!-- Password -->
+  <div class="flex flex-col gap-2">
+    <label for="userPassword">كلمة المرور</label>
+    <p-iconfield class="w-full">
+      <input
+        id="userPassword"
+        type="password"
+        pInputText
+        class="w-full"
+        placeholder="كلمة المرور (8 رموز على الأقل)"
+        [(ngModel)]="userForm.password"
+      />
+      <p-inputicon class="pi pi-lock" />
+    </p-iconfield>
+  </div>
+
+  <!-- Role Selection -->
+  <div class="flex flex-col gap-2">
+    <label for="userRole">الدور</label>
+    <p-select
+      [options]="usersService.roles()"
+      optionLabel="name"
+      optionValue="id"
+      [filter]="true"
+      filterBy="name"
+      [showClear]="true"
+      placeholder="إختر الدور الوظيفي للمستخدم"
+      class="w-full h-10!"
+      id="userRole"
+      [(ngModel)]="userForm.roleId"
+    >
+    </p-select>
+  </div>
+</div>
+
+<div class="card flex justify-center mt-4!">
+  <button
+    pButton
+    class="w-full! h-12!"
+    [disabled]="!userForm.name || !userForm.email || !userForm.password || !userForm.roleId || isSubmitting"
+    (click)="saveUser()"
+  >
+    <i class="pi pi-check" pButtonIcon></i>
+    <span pButtonLabel>حفظ المستخدم</span>
+  </button>
+</div>

@@ -1,0 +1,79 @@
+<div class="sidebar">
+  <div class="side-bar-header flex flex-row gap-3 p-6! pb-6!">
+    <div class="icon-wrapper w-fit p-3 bg-blue-600">
+      <img
+        src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iLTIgLTIgMjQgMjQiPgoJPHBhdGggZD0iTS0yIC0yaDI0djI0SC0yeiIgZmlsbD0ibm9uZSIgLz4KCTxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik03IDEyLjkxN3YuNTgzYTQuNSA0LjUgMCAxIDAgOSAwdi0xLjY3YTMuMDAxIDMuMDAxIDAgMSAxIDIgMHYxLjY3YTYuNSA2LjUgMCAxIDEtMTMgMHYtLjU4M0E2IDYgMCAwIDEgMCA3VjJhMiAyIDAgMCAxIDItMmgxYTEgMSAwIDEgMSAwIDJIMnY1YTQgNCAwIDEgMCA4IDBWMkg5YTEgMSAwIDEgMSAwLTJoMWEyIDIgMCAwIDEgMiAydjVhNiA2IDAgMCAxLTUgNS45MTdNMTcgMTBhMSAxIDAgMSAwIDAtMmExIDEgMCAwIDAgMCAyIiAvPgo8L3N2Zz4K"
+        alt=""
+        srcset=""
+      />
+    </div>
+    <div class="col flex flex-col">
+      <p class="font-semibold text-[14px] text-(--k-primary-300)">وزار الصحة الليبية</p>
+      <p class="text-gray-500 text-[10px]">المنصة الوطنية لإدارة المعدات الصحية</p>
+    </div>
+  </div>
+
+  <div class="p-3!">
+    <app-side-bar-btn
+      route="home"
+      [iconUrl]="Icons.Dashboard"
+      textContent="لوحة المعلومات"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="map"
+      [iconUrl]="Icons.GisMap"
+      textContent="التحليلات المكانية"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="facilities"
+      [iconUrl]="Icons.Facilities"
+      textContent="الجهات الصحية"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="assets"
+      [iconUrl]="Icons.Assets"
+      textContent="إدارة الأصول"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="assets"
+      [iconUrl]="Icons.Assets"
+      textContent="إدارة المستلزمات"
+      [disabled]="true"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="inventory"
+      [iconUrl]="Icons.Inventory"
+      textContent="عمليات الحصر"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="needs"
+      [iconUrl]="Icons.Needs"
+      textContent="طلبات االإحتياح"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="maintenance"
+      [iconUrl]="Icons.Maintenance"
+      textContent="الصيانة"
+      [disabled]="true"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="users"
+      [iconUrl]="Icons.Users"
+      textContent="المستخدمين"
+    ></app-side-bar-btn>
+    <app-side-bar-btn
+      route="reports"
+      [iconUrl]="Icons.Reports"
+      textContent="التقارير"
+      [disabled]="true"
+    ></app-side-bar-btn>
+    
+    <div class="border-t border-surface-200 dark:border-surface-800 mt-4! pt-4!">
+      <app-side-bar-btn
+        [iconUrl]="'material-symbols:logout-rounded'"
+        textContent="تسجيل الخروج"
+        (onClick)="logout()"
+      ></app-side-bar-btn>
+    </div>
+  </div>
+</div>

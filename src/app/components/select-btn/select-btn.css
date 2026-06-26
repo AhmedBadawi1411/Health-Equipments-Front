@@ -1,0 +1,29 @@
+.buttons-group {
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+        background-color: var(--k-forground-color);
+        padding: 16px;
+        border-radius: 16px;
+        -webkit-border-radius: 16px;
+        -moz-border-radius: 16px;
+        -ms-border-radius: 16px;
+        -o-border-radius: 16px;
+}
+
+button {
+        border: 1px solid var(--k-border);
+        width: 100%;
+        padding: 32px;
+        border-radius: 8px;
+        -webkit-border-radius: 8px;
+        -moz-border-radius: 8px;
+        -ms-border-radius: 8px;
+        -o-border-radius: 8px;
+        background-color: var(--k-border);
+}
+
+button.active {
+        background-color: var(--k-primary-opc-100);
+        color: var(--k-primary);
+}

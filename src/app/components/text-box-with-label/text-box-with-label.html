@@ -1,0 +1,7 @@
+<div class="text-box-wrapper flex flex-col gap-2 w-full">
+  <p class="text-gray-700">{{label}}</p>
+  <p-iconfield class="w-full">
+    <p-inputicon [class]="icon" />
+    <input class="placeholder:text-xs placeholder:text-gray-400! w-full" type="text" pInputText [placeholder]="placeholder" [(ngModel)]="value" (ngModelChange)="onTextChanged($event)"/>
+  </p-iconfield>
+</div>

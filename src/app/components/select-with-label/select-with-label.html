@@ -1,0 +1,15 @@
+<div class="text-box-wrapper flex flex-col gap-2 w-full">
+  <p class="text-gray-700">{{ label }}</p>
+  <div class="flex justify-center w-full">
+    <p-select
+      [options]="optionsList"
+      [(ngModel)]="selectedItem"
+      (ngModelChange)="onItemSelected($event)"
+      [optionLabel]="optionLabel"
+      [optionValue]="optionValue"
+      [placeholder]="placeholder"
+      [showClear]="true"
+      class="w-full"
+    />
+  </div>
+</div>

@@ -1,0 +1,87 @@
+<p-toast position="bottom-right"></p-toast>
+<p-menu #menu [model]="menuItems" [popup]="true" appendTo="body"></p-menu>
+
+<div class="assets-layout">
+  <div class="header">
+    <app-section-header
+      (onAddClickedEvent)="onAdd()"
+      sectionTitle="إدارة الجهات الصحية"
+      actionLabel="إضافة منشأة جديدة"
+    ></app-section-header>
+  </div>
+  
+  <div class="filters-wrapper flex flex-row gap-4 items-end">
+    <app-text-box-with-label [(value)]="searchText"></app-text-box-with-label>
+    <app-select-with-label [(selectedItem)]="selectedType" [optionsList]="typeOptions" label="نوع الجهة" placeholder="اختر النوع"></app-select-with-label>
+    <app-select-with-label [(selectedItem)]="selectedStatus" [optionsList]="statusOptions" label="حالة الجرد" placeholder="اختر الحالة"></app-select-with-label>
+    <app-select-with-label [(selectedItem)]="selectedRegion" [optionsList]="regionOptions()" label="المنطقة" placeholder="اختر المنطقة"></app-select-with-label>
+    
+    <div class="pb-1!">
+      <p-button 
+        icon="pi pi-refresh" 
+        label="إعادة ضبط" 
+        severity="secondary" 
+        (click)="resetFilters()" 
+        class="h-10!"
+      />
+    </div>
+  </div>
+
+  <div class="card">
+    <p-table
+      [value]="filteredFacilities()"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 30]"
+      #facilities
+      [columns]="cols"
+    >
+      <ng-template #caption>
+        <div class="text-end pb-4">
+          <p-button icon="pi pi-external-link" label="تصدير" (click)="facilities.exportCSV()" />
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th>الرقم التعريفي</th>
+          <th>المنطقة</th>
+          <th>الاسم</th>
+          <th>النوع</th>
+          <th>العنوان</th>
+          <th>المستوي</th>
+          <th>السعة</th>
+          <th>حالة الجرد</th>
+          <th class="w-24 text-center">الاجراءات</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td>{{ item.facilityID }}</td>
+          <td>{{ facilitiesService.regionsMap().get(item.regionID) }}</td>
+          <td>{{ item.facilityName }}</td>
+          <td>{{ item.facilityType }}</td>
+          <td>{{ item.address ?? 'لا يوجد' }}</td>
+          <td>{{ item.facilityLevel }}</td>
+          <td>{{ item.capacity }}</td>
+          <td>
+            <p-tag
+              [value]="(item.inventoryStatus | InventoryStatus).label"
+              [severity]="(item.inventoryStatus | InventoryStatus).severity"
+            />
+          </td>
+          <td>
+            <div class="flex flex-row justify-center">
+              <p-button 
+                icon="pi pi-ellipsis-v" 
+                (click)="activeItem = item; menu.toggle($event)" 
+                severity="secondary" 
+                rounded 
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

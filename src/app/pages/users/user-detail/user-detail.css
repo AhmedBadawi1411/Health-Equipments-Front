@@ -1,0 +1,31 @@
+/* User detail styles */
+.p-button-emerald {
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.p-button-emerald:hover {
+  background-color: #059669 !important;
+  border-color: #059669 !important;
+}
+
+
+.form-wrapper{
+        width: 100%;
+        display: flex;
+        
+        gap: 16px;
+        padding: 16px;
+        background-color: var(--k-forground-color);
+        border-radius: 16px;
+        -webkit-border-radius: 16px;
+        -moz-border-radius: 16px;
+        -ms-border-radius: 16px;
+        -o-border-radius: 16px;
+        /* margin-top: 32px; */
+}
+
+th {
+  text-align: center !important;
+}

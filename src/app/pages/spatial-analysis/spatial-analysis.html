@@ -1,0 +1,428 @@
+<div class="spatial-wrapper">
+  <div class="map-area">
+    <div id="map"></div>
+  </div>
+
+  <div class="sidebar">
+    <!-- ───────── Header ───────── -->
+    <div class="sidebar-header">
+      <div class="sidebar-title-row">
+        <i class="pi pi-map sidebar-icon"></i>
+        <h2 class="sidebar-title">التحليل المكاني</h2>
+      </div>
+      <p class="sidebar-subtitle">خريطة الجهات الصحية وتوزيع التجهيزات</p>
+    </div>
+
+    <!-- ───────── KPI Strip ───────── -->
+    <div class="kpi-strip">
+      <div class="kpi-item">
+        <span class="kpi-val">{{ totalFacilities }}</span>
+        <span class="kpi-lbl">إجمالي الجهات</span>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-item">
+        <span class="kpi-val text-green-500">{{ approvedCount }}</span>
+        <span class="kpi-lbl">مكتمل الجرد</span>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-item">
+        <span class="kpi-val text-amber-500">{{ inProgressCount }}</span>
+        <span class="kpi-lbl">قيد الجرد</span>
+      </div>
+      <div class="kpi-divider"></div>
+      <div class="kpi-item">
+        <span class="kpi-val text-red-500">{{ notStartedCount }}</span>
+        <span class="kpi-lbl">لم يبدأ</span>
+      </div>
+    </div>
+
+    <!-- ───────── Panel Tabs ───────── -->
+    <div class="panel-tabs">
+      <button
+        class="panel-tab"
+        [class.active]="activePanel === 'filters'"
+        (click)="activePanel = 'filters'"
+      >
+        <i class="pi pi-filter"></i> تصفية
+      </button>
+      <button
+        class="panel-tab"
+        [class.active]="activePanel === 'analytics'"
+        (click)="activePanel = 'analytics'"
+      >
+        <i class="pi pi-chart-scatter"></i> تحليلات
+      </button>
+      <button
+        class="panel-tab"
+        [class.active]="activePanel === 'legend'"
+        (click)="activePanel = 'legend'"
+      >
+        <i class="pi pi-list"></i> دليل
+      </button>
+    </div>
+
+    <!-- ══════════════ PANEL: FILTERS ══════════════ -->
+    @if (activePanel === 'filters') {
+      <div class="filter-section">
+        <label class="filter-label">تلوين الخريطة حسب</label>
+        <div class="color-mode-btns">
+          @for (opt of colorModeOptions; track opt.value) {
+            <button
+              class="mode-btn"
+              [class.active]="colorMode() === opt.value"
+              (click)="onColorModeChange(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <label class="filter-label">تصفية حسب المنطقة</label>
+        <p-select
+          [options]="regionOptions"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="false"
+          [(ngModel)]="selectedRegionFilter"
+          (ngModelChange)="onFilterChange()"
+          class="w-full"
+          placeholder="كل المناطق"
+          appendTo="body"
+        />
+      </div>
+
+      <div class="filter-section">
+        <label class="filter-label">تصفية حسب نوع الجهة</label>
+        <p-select
+          [options]="facilityTypeOptions"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="false"
+          [(ngModel)]="selectedTypeFilter"
+          (ngModelChange)="onFilterChange()"
+          class="w-full"
+          placeholder="كل الأنواع"
+          appendTo="body"
+        />
+      </div>
+
+      <div class="filter-section">
+        <label class="filter-label">تصفية حسب حالة الجرد</label>
+        <p-select
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="false"
+          [(ngModel)]="selectedStatusFilter"
+          (ngModelChange)="onFilterChange()"
+          class="w-full"
+          placeholder="كل الحالات"
+          appendTo="body"
+        />
+      </div>
+
+      <button class="fit-btn" (click)="fitBounds()">
+        <i class="pi pi-expand"></i>
+        <span>عرض كل الجهات على الخريطة</span>
+      </button>
+    }
+
+    <!-- ══════════════ PANEL: ANALYTICS ══════════════ -->
+    @if (activePanel === 'analytics') {
+      <!-- Quick insight cards -->
+      <div class="insight-cards">
+        <div class="insight-card">
+          <i class="pi pi-chart-bar insight-icon"></i>
+          <div>
+            <div class="insight-val">{{ avgAssetsPerFacility }}</div>
+            <div class="insight-lbl">متوسط الأصول / جهة</div>
+          </div>
+        </div>
+        <div class="insight-card danger">
+          <i class="pi pi-exclamation-triangle insight-icon"></i>
+          <div>
+            <div class="insight-val">{{ facilitiesWithoutCoverage }}</div>
+            <div class="insight-lbl">جهات بلا أصول مسجلة</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analytics-list">
+        <!-- 1. Heatmap -->
+        <div class="analytic-item">
+          <div class="analytic-header">
+            <div class="analytic-info">
+              <span class="analytic-badge heat">كثافة</span>
+              <span class="analytic-name">خريطة كثافة الأصول</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="showHeatmap" (change)="onHeatmapToggle()" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="analytic-desc">
+            تظهر تركز الأصول الطبية جغرافيا — اللون الأحمر يعني كثافة عالية.
+          </p>
+
+          @if (showHeatmap) {
+            <div
+              class="heatmap-controls-box"
+              style="
+                margin-top: 10px;
+                padding: 8px;
+                background: rgba(0, 0, 0, 0.03);
+                border-radius: 6px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <div
+                class="buffer-slider-row"
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  font-size: 11px;
+                "
+              >
+                <span style="font-weight: 600; color: #475569"
+                  >نصف القطر: {{ heatmapRadius }} بكسل</span
+                >
+                <input
+                  type="range"
+                  min="10"
+                  max="80"
+                  step="5"
+                  [(ngModel)]="heatmapRadius"
+                  (input)="onHeatmapParamChange()"
+                  class="buffer-slider"
+                  style="width: 60%; cursor: pointer"
+                />
+              </div>
+
+              <div
+                class="buffer-slider-row"
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  font-size: 11px;
+                "
+              >
+                <span style="font-weight: 600; color: #475569"
+                  >التشتت (Blur): {{ heatmapBlur }} بكسل</span
+                >
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
+                  step="1"
+                  [(ngModel)]="heatmapBlur"
+                  (input)="onHeatmapParamChange()"
+                  class="buffer-slider"
+                  style="width: 60%; cursor: pointer"
+                />
+              </div>
+            </div>
+          }
+        </div>
+        <!-- 2. Clustering -->
+        <div class="analytic-item">
+          <div class="analytic-header">
+            <div class="analytic-info">
+              <span class="analytic-badge cluster">تجميع</span>
+              <span class="analytic-name">تجميع الجهات المتقاربة</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="showClusters" (change)="onClusterToggle()" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="analytic-desc">
+            يجمع الجهات القريبة في دائرة واحدة تعرض عدد الجهات وإجمالي الأصول.
+          </p>
+        </div>
+
+        <!-- 3. Service Buffers -->
+        <div class="analytic-item">
+          <div class="analytic-header">
+            <div class="analytic-info">
+              <span class="analytic-badge buffer">تغطية</span>
+              <span class="analytic-name">نطاق الخدمة الجغرافي</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="showBuffers" (change)="onBuffersToggle()" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="analytic-desc">دوائر حول كل جهة بنصف القطر المحدد أدناه (كم).</p>
+          @if (showBuffers) {
+            <div class="buffer-slider-row">
+              <span>{{ bufferRadiusKm }} كم</span>
+              <input
+                type="range"
+                min="5"
+                max="100"
+                step="5"
+                [(ngModel)]="bufferRadiusKm"
+                (change)="onBufferRadiusChange()"
+                class="buffer-slider"
+              />
+            </div>
+          }
+        </div>
+
+        <!-- 4. Gap Analysis -->
+        <div class="analytic-item">
+          <div class="analytic-header">
+            <div class="analytic-info">
+              <span class="analytic-badge gap">عجز</span>
+              <span class="analytic-name">تحليل الفجوات (Voronoi)</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="showGaps" (change)="onGapsToggle()" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="analytic-desc">
+            يقسم الخريطة إلى مناطق نفوذ لكل جهة — ملونة بحالة الجرد لكشف الفجوات.
+          </p>
+        </div>
+
+        <!-- 5. Nearest Links -->
+        <div class="analytic-item">
+          <div class="analytic-header">
+            <div class="analytic-info">
+              <span class="analytic-badge nearest">اتصال</span>
+              <span class="analytic-name">خطوط الجهة الأقرب</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="showNearest" (change)="onNearestToggle()" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="analytic-desc">يربط كل جهة بأقرب جهة لها — الأحمر يعني جهة معزولة (>50 كم).</p>
+          @if (showNearest) {
+            <div class="nearest-legend-mini">
+              <span class="dot" style="background: #10b981"></span><span>أقل من 25 كم</span>
+              <span class="dot" style="background: #f59e0b"></span><span>25–50 كم</span>
+              <span class="dot" style="background: #ef4444"></span><span>أكثر من 50 كم</span>
+            </div>
+          }
+        </div>
+
+        <!-- 6. Centroid -->
+        <div class="analytic-item">
+          <div class="analytic-header">
+            <div class="analytic-info">
+              <span class="analytic-badge centroid">مركز</span>
+              <span class="analytic-name">مركز ثقل المناطق</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="showCentroid" (change)="onCentroidToggle()" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="analytic-desc">
+            يحسب المركز الجغرافي لجهات كل منطقة ويرسم مضلع التوزيع (Convex Hull).
+          </p>
+        </div>
+      </div>
+      <!-- /analytics-list -->
+
+      <!-- Most isolated facility insight -->
+      @if (showNearest) {
+        <div class="insight-box warning">
+          <i class="pi pi-map-marker"></i>
+          <div>
+            <div class="insight-box-title">أكثر الجهات عزلا</div>
+            <div class="insight-box-val">{{ mostIsolatedFacility }}</div>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ══════════════ PANEL: LEGEND ══════════════ -->
+    @if (activePanel === 'legend') {
+      <div class="legend-section">
+        <div class="legend-title">
+          @if (colorMode() === 'status') {
+            دليل الألوان — حالة الجرد
+          }
+          @if (colorMode() === 'type') {
+            دليل الألوان — نوع الجهة
+          }
+          @if (colorMode() === 'region') {
+            الألوان تمثل المناطق المختلفة
+          }
+        </div>
+
+        @if (colorMode() === 'status') {
+          @for (item of statusLegend; track item.key) {
+            <div class="legend-item">
+              <span class="legend-dot" [style.background]="item.color"></span>
+              <span class="legend-txt">{{ item.label }}</span>
+            </div>
+          }
+        }
+
+        @if (colorMode() === 'type') {
+          @for (item of typeLegend; track item.key) {
+            <div class="legend-item">
+              <span class="legend-dot" [style.background]="item.color"></span>
+              <span class="legend-txt">{{ item.key }}</span>
+            </div>
+          }
+        }
+
+        <div class="legend-note">
+          <i class="pi pi-info-circle"></i>
+          حجم النقطة يتناسب مع عدد الأصول الطبية
+        </div>
+
+        <!-- Analytics legend -->
+        @if (showBuffers || showGaps || showNearest || showCentroid) {
+          <div class="legend-divider"></div>
+          <div class="legend-title">دليل طبقات التحليل</div>
+
+          @if (showBuffers) {
+            <div class="legend-item">
+              <span class="legend-line dashed"></span>
+              <span class="legend-txt">نطاق الخدمة ({{ bufferRadiusKm }} كم)</span>
+            </div>
+          }
+          @if (showGaps) {
+            <div class="legend-item">
+              <span class="legend-poly"></span>
+              <span class="legend-txt">منطقة نفوذ Voronoi</span>
+            </div>
+          }
+          @if (showNearest) {
+            <div class="legend-item">
+              <span class="legend-line dashed red"></span>
+              <span class="legend-txt">خط الجهة الأقرب</span>
+            </div>
+          }
+          @if (showCentroid) {
+            <div class="legend-item">
+              <span class="legend-diamond"></span>
+              <span class="legend-txt">مركز ثقل المنطقة</span>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- ───────── Fit Bounds (always visible) ───────── -->
+    @if (activePanel !== 'filters') {
+      <button class="fit-btn" (click)="fitBounds()">
+        <i class="pi pi-expand"></i>
+        <span>عرض كل الجهات على الخريطة</span>
+      </button>
+    }
+  </div>
+  <!-- /sidebar -->
+</div>

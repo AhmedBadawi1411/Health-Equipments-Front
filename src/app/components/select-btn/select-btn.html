@@ -1,0 +1,7 @@
+<div class="buttons-group">
+  @for (item of items; track $index) {
+    <button (click)="onItemSelected(item)" class="selecte-btn-wrapper" [ngClass]="{active:selectedItem===item.value}">
+      <p>{{ item.label }}</p>
+    </button>
+  }
+</div>

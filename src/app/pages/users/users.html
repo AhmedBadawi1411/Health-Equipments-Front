@@ -1,0 +1,85 @@
+<p-confirmDialog [style]="{width: '50vw'}" acceptLabel="نعم" rejectLabel="لا"></p-confirmDialog>
+<p-toast position="bottom-right"></p-toast>
+
+<div class="assets-layout">
+  <div class="header">
+    <app-section-header
+      actionLabel="إضافة مستخدم جديد"
+      sectionTitle="إدارة المستخدمين والصلاحيات"
+      (onAddClickedEvent)="goToCreate()"
+    ></app-section-header>
+  </div>
+
+  <div class="filters-wrapper flex flex-row gap-2">
+    <div class="text-box-wrapper flex flex-col gap-2 w-full md:w-80">
+      <p class="text-gray-700">البحث</p>
+      <p-iconfield class="w-full">
+        <p-inputicon class="pi pi-search" />
+        <input
+          type="text"
+          pInputText
+          class="placeholder:text-xs placeholder:text-gray-400! w-full"
+          placeholder="بحث عن مستخدم بالاسم، البريد أو الدور..."
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange()"
+        />
+      </p-iconfield>
+    </div>
+  </div>
+
+  <div class="card">
+    <p-table
+      [value]="filtered"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 30]"
+      #dt
+    >
+      <ng-template #header>
+        <tr>
+          <th>الاسم الكامل</th>
+          <th>البريد الإلكتروني</th>
+          <th>الدور</th>
+          <th>الجهات المسندة</th>
+          <th>تاريخ الإنشاء</th>
+          <th>الاجراءات</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center justify-center font-bold text-xs text-white rounded-full w-8 h-8" [style.background-color]="avatarColor(item.name)">
+                {{ initials(item.name) }}
+              </div>
+              <span class="font-semibold">{{ item.name }}</span>
+            </div>
+          </td>
+          <td>{{ item.email }}</td>
+          <td>
+            <p-tag severity="info" [value]="item.role?.name || 'بدون دور'"></p-tag>
+          </td>
+          <td>
+            <p-tag severity="secondary" [value]="(item.facilities?.length || 0) + ' منشآت'"></p-tag>
+          </td>
+          <td>{{ item.createdAt | date: 'dd/MM/yyyy' }}</td>
+          <td>
+            <div class="flex flex-row gap-2">
+              <p-button icon="pi pi-user-edit" (click)="goToDetail(item)" severity="secondary" [rounded]="true" />
+              <p-button icon="pi pi-trash" (click)="confirmDelete(item)" severity="danger" [rounded]="true" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="6" class="text-center p-8 text-surface-500 dark:text-surface-400">
+            <i class="pi pi-users text-4xl mb-3 block"></i>
+            <span>لم يتم العثور على أي مستخدمين مطابقين لخيارات البحث.</span>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
