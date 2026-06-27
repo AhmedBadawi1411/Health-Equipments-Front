@@ -16,6 +16,7 @@ import { IFacility, FacilityForm } from '../../../interfaces/Facilities.Interfac
 import { SectionHeader } from '../../../components/section-header/section-header';
 
 import * as L from 'leaflet';
+import { AuthService } from '../../../services/auth-service';
 
 @Component({
   selector: 'app-facility-detail',
@@ -79,6 +80,7 @@ export class FacilityDetail implements OnInit, AfterViewInit {
     private readonly router: Router,
     private readonly toast: MessageService,
     private readonly cdr: ChangeDetectorRef,
+    public readonly authService:AuthService
   ) {}
 
   ngOnInit(): void {

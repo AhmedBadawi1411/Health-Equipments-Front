@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, input, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
@@ -17,6 +17,8 @@ export class SelectWithLabel {
   @Input() placeholder: string = '';
   @Input() optionLabel: string = 'name';
   @Input() optionValue: string | undefined = undefined;
+  @Input() filter:boolean = false;
+  @Input() filterBy:string = 'name';
 
   @Input() selectedItem: any = null;
   @Output() selectedItemChange: EventEmitter<any> = new EventEmitter<any>();

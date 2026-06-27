@@ -21,12 +21,15 @@ export class FacilitiesSerive {
   departments = this.departmentsSignal.asReadonly();
   regions = this.regionsSignal.asReadonly();
 
-  departmentsMap = computed(() => {
+  facilityDepartmentsMap = computed(() => {
     const map = new Map<number, string>();
 
     this.departmentsSignal().forEach((d) => {
       map.set(d.departmentID, d.departmentName);
     });
+
+    console.log("DEPARTMENTS MAP: ", map);
+    
 
     return map;
   });

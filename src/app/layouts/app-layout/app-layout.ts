@@ -27,8 +27,12 @@ export class AppLayout implements OnInit {
   ngOnInit(): void {
     this.facilitiesSerivce.loadFacilities();
     this.facilitiesSerivce.loadRegions();
+    console.log("==============================");
+    
     this.departmentService.loadDepartments();
-    this.departmentService.loadDepartments();
+    console.log("==============================");
+
+    // this.facilitiesSerivce.loadDepartments();
     this.assetMaster.loadAssetMaster();
   }
 

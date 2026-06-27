@@ -11,6 +11,8 @@ import { CommonModule } from '@angular/common';
 import { SelectWithLabel } from '../../../components/select-with-label/select-with-label';
 import { TextBoxWithLabel } from '../../../components/text-box-with-label/text-box-with-label';
 import { AssetsHelperService } from '../../../services/assets-helpers';
+import { AuthService } from '../../../services/auth-service';
+import { DepartmentsSerive } from '../../../services/department.service';
 
 @Component({
   selector: 'app-assets',
@@ -107,9 +109,11 @@ export class Assets implements OnInit {
     private readonly router: Router,
     private readonly route: ActivatedRoute,
     protected readonly assetsService: AssetsService,
+    protected readonly departmentsService: DepartmentsSerive,
     protected readonly facilitiesService: FacilitiesSerive,
     protected readonly assetsHelper: AssetsHelperService,
-    private readonly toast: MessageService
+    private readonly toast: MessageService,
+    public readonly authService: AuthService
   ) {}
 
   ngOnInit() {

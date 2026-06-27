@@ -5,10 +5,19 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class ModuleNamePipe implements PipeTransform {
   private readonly modulesMap = {
-    ASSETS: 'الأصول',
-    FACILITIES: 'الجهات',
-    INVENTORY: 'عمليات الحصر',
-    USERS: 'المستخدمين',
+    user: 'المستخدمين',
+    facility: 'الجهات',
+    department: 'الأقسام',
+    equipment: 'المعدات',
+    asset: 'الأصول',
+    maintenance: 'الصيانة',
+    inventory: 'عمليات الحصر',
+    request: 'طلبات الاحتياج',
+    supplier: 'الموردين',
+    dashboard: 'لوحة المعلومات',
+    region: 'البلديات',
+    role: 'الأدوار',
+    gis: 'البيانات المكانية',
   };
 
   transform(value: string, ...args: unknown[]): string {

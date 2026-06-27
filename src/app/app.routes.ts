@@ -16,6 +16,7 @@ import { NeedRequests } from './pages/need-requests/need-requests';
 import { CreateNeed } from './pages/need-requests/create-need/create-need';
 import { AssetsSuppliers } from './pages/asset/assets-suppliers/assets-suppliers';
 import { AssetsContracts } from './pages/asset/assets-contracts/assets-contracts';
+import { permissionGuard } from './guards/permission.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -42,10 +43,12 @@ export const routes: Routes = [
         path: 'map',
         loadComponent: () =>
           import('./pages/spatial-analysis/spatial-analysis').then((m) => m.SpatialAnalysis),
+        canActivate: [permissionGuard('gis:analysis')],
       },
       {
         path: 'facilities',
         loadComponent: () => FacilitiesLayout,
+        canActivate: [permissionGuard('facility:read')],
         children: [
           { path: '', component: Facilities },
           { path: 'create', component: CreateFacility },
@@ -58,14 +61,17 @@ export const routes: Routes = [
       {
         path: 'inventory',
         loadComponent: () => import('./pages/inventory/inventory').then((m) => m.InventoryComponent),
+        canActivate: [permissionGuard('inventory:read')],
       },
       {
         path: 'maintenance',
         loadComponent: () => import('./pages/maintenance/maintenance').then((m) => m.Maintenance),
+        canActivate: [permissionGuard('maintenance:read')],
       },
       {
         path: 'users',
         loadComponent: () => import('./layouts/pages/users-layout/users-layout').then((m) => m.UsersLayout),
+        canActivate: [permissionGuard('user:read')],
         children: [
           {
             path: '',
@@ -84,10 +90,12 @@ export const routes: Routes = [
       {
         path: 'reports',
         loadComponent: () => import('./pages/reports/reports').then((m) => m.Reports),
+        canActivate: [permissionGuard('dashboard:read')],
       },
       {
         path: 'assets',
         loadComponent: () => AssetsLayout,
+        canActivate: [permissionGuard('asset:read')],
         children: [
           { path: '', component: Assets },
           { path: 'create', component: CreateAsset },
@@ -102,6 +110,7 @@ export const routes: Routes = [
       {
         path: 'needs',
         loadComponent: () => NeedsLayout,
+        canActivate: [permissionGuard('request:read')],
         children: [
           { path: '', component: NeedRequests },
           { path: 'create', component: CreateNeed },

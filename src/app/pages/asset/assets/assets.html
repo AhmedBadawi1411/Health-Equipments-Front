@@ -3,6 +3,7 @@
 <div class="assets-layout">
   <div class="header">
     <app-section-header
+      [showAddButton]="authService.hasPermission('asset:create')"
       (onAddClickedEvent)="onAdd()"
       sectionTitle="إدارة الأصول الطبية"
       actionLabel="إضافة أصل جديد"
@@ -17,6 +18,8 @@
       [optionsList]="facilityOptions()"
       label="الجهة"
       placeholder="اختر الجهة"
+      [filter]="true"
+      filterBy="name"
     ></app-select-with-label>
     <app-select-with-label
       class="flex-1!"
@@ -24,6 +27,8 @@
       [optionsList]="statusOptions"
       label="حالة الأصل"
       placeholder="اختر الحالة"
+      [filter]="true"
+      filterBy="name"
     ></app-select-with-label>
     <app-select-with-label
       class="flex-1!"
@@ -31,6 +36,8 @@
       [optionsList]="typeOptions()"
       label="نوع الجهاز"
       placeholder="اختر النوع"
+      [filter]="true"
+      filterBy="name"
     ></app-select-with-label>
     <app-select-with-label
       class="flex-1!"
@@ -38,6 +45,8 @@
       [optionsList]="supplierOptions()"
       label="المورد"
       placeholder="اختر المورد"
+      [filter]="true"
+      filterBy="name"
     ></app-select-with-label>
 
     <div class="pb-1!">
@@ -75,7 +84,7 @@
       <ng-template #body let-item>
         <tr>
           <td>{{ facilitiesService.facilitiesMap().get(item.facilityId) }}</td>
-          <td>{{ facilitiesService.departmentsMap().get(item.departmentId) }}</td>
+          <td>{{ departmentsService.departmentsMap().get(item.departmentId) }}</td>
           <td>{{ assetsService.assetMasterMap().get(item.equipmentTypeId) }}</td>
           <td>{{ item.serialNumber }}</td>
           <td>{{ assetsHelper.suppliersMap().get(item.supplierId) || '-' }}</td>
@@ -85,12 +94,14 @@
           <td>
             <div class="flex flex-row gap-2 justify-center">
               <p-button
+                *ngIf="authService.hasPermission('asset:update')"
                 icon="pi pi-pencil"
                 (click)="editAsset(item.assetId)"
                 severity="secondary"
                 rounded
               />
               <p-button
+                *ngIf="authService.hasPermission('asset:delete')"
                 icon="pi pi-trash"
                 (click)="deleteAsset(item.assetId)"
                 severity="danger"

@@ -3,6 +3,7 @@
 <div class="assets-layout">
   <div class="header">
     <app-section-header
+      [showAddButton]="authService.hasPermission('request:create')"
       (onAddClickedEvent)="onAdd()"
       sectionTitle="إدارة طلبات الإحتياج"
       actionLabel="إضافة طلب جديد"
@@ -41,8 +42,8 @@
           <td>{{ item.items?.length || 0 }}</td>
           <td>
             <div class="flex flex-row gap-2">
-              <p-button icon="pi pi-pencil" (click)="editRequest(item.requestId)" severity="secondary" rounded />
-              <p-button icon="pi pi-trash" (click)="deleteRequest(item.requestId)" severity="danger" rounded />
+              <p-button *ngIf="authService.hasPermission('request:update')" icon="pi pi-pencil" (click)="editRequest(item.requestId)" severity="secondary" rounded />
+              <p-button *ngIf="authService.hasPermission('request:delete')" icon="pi pi-trash" (click)="deleteRequest(item.requestId)" severity="danger" rounded />
             </div>
           </td>
         </tr>

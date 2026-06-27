@@ -124,7 +124,7 @@
       [filter]="true"
       filterBy="name"
       [showClear]="true"
-      placeholder="اختر المورد (اختياري)"
+      placeholder="اختر المورد"
       class="w-full h-10!"
       id="supplierId"
       [(ngModel)]="currentAsset.supplierId"
@@ -193,7 +193,7 @@
         <ng-template #body let-item let-i="rowIndex">
           <tr>
             <td>{{ facilitiesService.facilitiesMap().get(item.facilityID) }}</td>
-            <td>{{ facilitiesService.departmentsMap().get(item.departmentID) }}</td>
+            <td>{{ facilitiesService.facilityDepartmentsMap().get(item.departmentID) }}</td>
             <td>{{ item.assetSerial }}</td>
             <td>{{ assetsHelper.suppliersMap().get(item.supplierId) || '-' }}</td>
             <td>{{ equipmentStatusMap.get(item.assetStatus) }}</td>

@@ -14,7 +14,6 @@
 .form-wrapper{
         width: 100%;
         display: flex;
-        
         gap: 16px;
         padding: 16px;
         background-color: var(--k-forground-color);

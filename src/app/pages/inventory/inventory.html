@@ -3,6 +3,7 @@
 <!-- Section Header changes based on viewMode -->
 <app-section-header
   *ngIf="viewMode() === 'list'"
+  [showAddButton]="authService.hasPermission('inventory:create')"
   actionLabel="إضافة عملية حصر"
   sectionTitle="عمليات حصر الأجهزة والمعدات الطبية"
   (onAddClickedEvent)="switchToCreate()"
@@ -48,24 +49,27 @@
     </ng-template>
     <ng-template #body let-item>
       <tr>
-        <td>
-          {{
-            facilitiesService.facilitiesMap().get(item.facilityID || item.facilityId) || 'غير معروف'
-          }}
-        </td>
-        <td>{{ item.surveyDate || item.surveyDate | date: 'yyyy-MM-dd' }}</td>
+        <td>{{ facilitiesService.facilitiesMap().get(item.facilityID || item.facilityId) || 'غير معروف' }}</td>
+        <td>{{ item.surveyDate | date: 'yyyy-MM-dd' }}</td>
         <td>{{ item.surveyType }}</td>
         <td>{{ item.createdBy }}</td>
         <td>{{ item.notes || '-' }}</td>
         <td class="text-center font-bold">{{ item.items?.length || 0 }}</td>
         <td class="flex flex-row gap-2">
           <p-button icon="pi pi-eye" (click)="switchToView(item)" severity="info" rounded />
-          <p-button icon="pi pi-pencil" (click)="switchToEdit(item)" severity="secondary" rounded />
+          <p-button
+            icon="pi pi-pencil"
+            (click)="switchToEdit(item)"
+            severity="secondary"
+            rounded
+            *ngIf="authService.hasPermission('inventory:update')"
+          />
           <p-button
             icon="pi pi-trash"
             (click)="deleteSurvey(item.surveyID || item.surveyId)"
             severity="danger"
             rounded
+            *ngIf="authService.hasPermission('inventory:delete')"
           />
         </td>
       </tr>
@@ -84,6 +88,9 @@
   <div class="form-wrapper">
     <div class="flex flex-col gap-2">
       <label for="surveyFacilityId">الجهة الصحية</label>
+      <!--
+        ✅ surveyFacilityId أصبح signal — نستخدم getter/setter عبر surveyFacilityIdValue
+      -->
       <p-select
         [options]="facilitiesService.facilities()"
         optionLabel="facilityName"
@@ -94,11 +101,10 @@
         placeholder="إختر الجهة الصحية"
         class="w-full h-10!"
         id="surveyFacilityId"
-        [(ngModel)]="surveyFacilityId"
+        [(ngModel)]="surveyFacilityIdValue"
         (ngModelChange)="onFacilityChange($event)"
         [disabled]="viewMode() === 'edit'"
-      >
-      </p-select>
+      ></p-select>
     </div>
 
     <div class="flex flex-col gap-2">
@@ -123,8 +129,7 @@
         class="w-full h-10!"
         id="surveyType"
         [(ngModel)]="surveyType"
-      >
-      </p-select>
+      ></p-select>
     </div>
 
     <div class="flex flex-col gap-2 col-span-2">
@@ -149,7 +154,7 @@
   </div>
 
   <div class="form-wrapper mt-2!">
-    <!-- 1. Department – enabled only after facility chosen -->
+    <!-- 1. Department -->
     <div class="flex flex-col gap-2">
       <label for="itemDeptId">القسم / الإدارة</label>
       <p-select
@@ -159,16 +164,15 @@
         [filter]="true"
         filterBy="departmentName"
         [showClear]="true"
-        placeholder="{{ surveyFacilityId ? 'إختر القسم / الإدارة' : 'يجب إختيار الجهة أولا' }}"
+        placeholder="{{ surveyFacilityId() ? 'إختر القسم / الإدارة' : 'يجب إختيار الجهة أولا' }}"
         class="w-full h-10!"
         id="itemDeptId"
         [(ngModel)]="currentItem.departmentID"
-        [disabled]="!surveyFacilityId || editingItemIndex !== null"
-      >
-      </p-select>
+        [disabled]="!surveyFacilityId() || editingItemIndex !== null"
+      ></p-select>
     </div>
 
-    <!-- 2. Serial Number – blur triggers lookup -->
+    <!-- 2. Serial Number -->
     <div class="flex flex-col gap-2">
       <label for="itemSerial">الرقم التسلسلي</label>
       <p-iconfield class="w-full">
@@ -177,18 +181,13 @@
           type="text"
           pInputText
           class="w-full"
-          placeholder="{{
-            surveyFacilityId
-              ? 'أدخل الرقم التسلسلي ثم انتقل للحقل التالي'
-              : 'يجب إختيار الجهة أولا'
-          }}"
+          placeholder="{{ surveyFacilityId() ? 'أدخل الرقم التسلسلي ثم انتقل للحقل التالي' : 'يجب إختيار الجهة أولا' }}"
           [(ngModel)]="currentItem.serialNumberSnapshot"
           (blur)="checkSerial()"
-          [disabled]="!surveyFacilityId || editingItemIndex !== null"
+          [disabled]="!surveyFacilityId() || editingItemIndex !== null"
         />
         <p-inputicon class="pi pi-barcode" />
       </p-iconfield>
-      <!-- Lookup result badge -->
       @if (serialLookupDone) {
         @if (!currentItem.needRegistration) {
           <small class="text-green-600 font-semibold flex align-items-center gap-1">
@@ -203,7 +202,6 @@
     </div>
 
     <!-- 4. Technical status -->
-
     <div class="flex flex-col gap-2" [class.col-span-2]="serialLookupDone && !currentItem.needRegistration">
       <label for="itemStatus">الحالة الفنية</label>
       <p-select
@@ -213,8 +211,7 @@
         class="w-full h-10!"
         id="itemStatus"
         [(ngModel)]="currentItem.statusSnapshot"
-      >
-      </p-select>
+      ></p-select>
     </div>
 
     <!-- 3a. Existing asset: auto-filled name (read-only) -->
@@ -222,20 +219,14 @@
       <div class="flex flex-col gap-2 col-span-2">
         <label>إسم الجهاز (مسجل تلقائيا)</label>
         <p-iconfield class="w-full">
-          <input
-            type="text"
-            pInputText
-            class="w-full"
-            [value]="currentItem.equipmentNameSnapshot || ''"
-            [disabled]="true"
-          />
+          <input type="text" pInputText class="w-full"
+            [value]="currentItem.equipmentNameSnapshot || ''" [disabled]="true" />
           <p-inputicon class="pi pi-check-circle" />
         </p-iconfield>
       </div>
     }
 
-    <!-- 3b. New asset: choose equipment type only (full registration later) -->
-
+    <!-- 3b. New asset: choose equipment type -->
     @if (serialLookupDone && currentItem.needRegistration) {
       <div class="flex flex-col gap-2">
         <label for="itemEquipType">نوع الجهاز</label>
@@ -251,43 +242,18 @@
           id="itemEquipType"
           [(ngModel)]="currentItem.equipmentMasterID"
           (ngModelChange)="onEquipmentTypeSelected($event)"
-        >
-        </p-select>
-        <small class="text-surface-500"
-          >سيتم إضافة بيانات التسجيل الكاملة لاحقا عند تسجيل الجهاز</small
-        >
+        ></p-select>
+        <small class="text-surface-500">سيتم إضافة بيانات التسجيل الكاملة لاحقا عند تسجيل الجهاز</small>
       </div>
     }
-
-    <!-- 5. Quantity -->
-    <!-- <div class="flex flex-col gap-2">
-      <label for="itemQuantity">الكمية</label>
-      <p-iconfield class="w-full">
-        <input
-          id="itemQuantity"
-          type="number"
-          pInputText
-          class="w-full"
-          placeholder="1"
-          [(ngModel)]="currentItem.quantity"
-          min="1"
-        />
-        <p-inputicon class="pi pi-asterisk" />
-      </p-iconfield>
-    </div> -->
 
     <!-- 6. Remarks -->
     <div class="flex flex-col gap-2 col-span-2">
       <label for="itemRemarks">ملاحظات للجهاز</label>
       <p-iconfield class="w-full">
-        <input
-          id="itemRemarks"
-          type="text"
-          pInputText
-          class="w-full"
+        <input id="itemRemarks" type="text" pInputText class="w-full"
           placeholder="مثال: الجهاز يعمل بشكل ممتاز أو يحتاج لقطع غيار"
-          [(ngModel)]="currentItem.remarks"
-        />
+          [(ngModel)]="currentItem.remarks" />
         <p-inputicon class="pi pi-file-edit" />
       </p-iconfield>
     </div>
@@ -298,19 +264,12 @@
     <button
       pButton
       class="w-full! h-12! bg-gray-100! border-dashed!"
-      [disabled]="
-        !currentItem.departmentID ||
-        !currentItem.equipmentNameSnapshot ||
-        !currentItem.quantity ||
-        currentItem.quantity <= 0
-      "
+      [disabled]="!currentItem.departmentID || !currentItem.equipmentNameSnapshot || !currentItem.quantity || currentItem.quantity <= 0"
       (click)="addItem()"
     >
       <i class="pi pi-plus text-gray-700" pButtonIcon></i>
       <span pButtonLabel class="text-gray-700">
-        {{
-          editingItemIndex !== null ? 'تحديث بيانات الجهاز في القائمة' : 'إضافة جهاز لعملية الحصر'
-        }}
+        {{ editingItemIndex !== null ? 'تحديث بيانات الجهاز في القائمة' : 'إضافة جهاز لعملية الحصر' }}
       </span>
     </button>
   </div>
@@ -339,18 +298,11 @@
       </ng-template>
       <ng-template #body let-item let-i="rowIndex">
         <tr>
-          <td>
-            {{
-              facilitiesService.departmentsMap().get(item.departmentID || item.departmentId) ||
-                'غير معروف'
-            }}
-          </td>
+          <td>{{ facilitiesService.facilityDepartmentsMap().get(item.departmentID || item.departmentId) || 'غير معروف' }}</td>
           <td>{{ item.equipmentNameSnapshot }}</td>
           <td>{{ item.serialNumberSnapshot || '-' }}</td>
           <td>
-            <p-tag
-              [severity]="equipmentStatusMap.get(item.statusSnapshot)?.severity || 'secondary'"
-            >
+            <p-tag [severity]="equipmentStatusMap.get(item.statusSnapshot)?.severity || 'secondary'">
               {{ equipmentStatusMap.get(item.statusSnapshot)?.label || item.statusSnapshot }}
             </p-tag>
           </td>
@@ -376,11 +328,12 @@
   </div>
 
   <!-- Submit / Save button -->
-  <div class="card flex justify-center mt-4!">
+  <div class="card flex justify-center mt-4!"
+    *ngIf="(viewMode() === 'create' && authService.hasPermission('inventory:create')) || (viewMode() === 'edit' && authService.hasPermission('inventory:update'))">
     <button
       pButton
       class="w-full! h-12!"
-      [disabled]="!surveyFacilityId || !surveyDate || surveyItems().length === 0"
+      [disabled]="!surveyFacilityId() || !surveyDate || surveyItems().length === 0"
       (click)="saveSurvey()"
     >
       <i class="pi pi-check" pButtonIcon></i>
@@ -399,38 +352,29 @@
   ></app-section-header>
 
   <!-- Master Info Card -->
-  <div class="card p-6 bg-white dark:bg-surface-900 shadow-sm rounded-xl mt-4!">
+  <div class="card p-6! bg-white dark:bg-surface-900 shadow-sm rounded-xl mt-4!">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="flex flex-col gap-1">
         <span class="text-sm text-gray-500 dark:text-gray-400">الجهة الصحية</span>
         <span class="text-lg font-bold text-gray-800 dark:text-gray-200">
-          {{
-            surveyFacilityId
-              ? facilitiesService.facilitiesMap().get(surveyFacilityId) || 'غير معروف'
-              : 'غير معروف'
-          }}
+          {{ facilitiesService.facilitiesMap().get(surveyFacilityId()??-1) || 'غير معروف' }}
         </span>
       </div>
-
       <div class="flex flex-col gap-1">
         <span class="text-sm text-gray-500 dark:text-gray-400">تاريخ الحصر</span>
         <span class="text-lg font-bold text-gray-800 dark:text-gray-200">
-          {{ surveyDate || surveyDate | date: 'yyyy-MM-dd' }}
+          {{ surveyDate | date: 'yyyy-MM-dd' }}
         </span>
       </div>
-
       <div class="flex flex-col gap-1">
         <span class="text-sm text-gray-500 dark:text-gray-400">نوع الحصر</span>
         <span class="text-lg font-bold text-gray-800 dark:text-gray-200">
           {{ surveyType === 'دوري' ? 'حصر دوري' : surveyType === 'طارئ' ? 'حصر طارئ' : 'حصر سنوي' }}
         </span>
       </div>
-
       <div class="flex flex-col gap-1 col-span-1 md:col-span-3">
         <span class="text-sm text-gray-500 dark:text-gray-400">ملاحظات عامة</span>
-        <span class="text-md text-gray-700 dark:text-gray-300">
-          {{ notes || 'لا توجد ملاحظات عامة مسجلة' }}
-        </span>
+        <span class="text-md text-gray-700 dark:text-gray-300">{{ notes || 'لا توجد ملاحظات عامة مسجلة' }}</span>
       </div>
     </div>
   </div>
@@ -440,7 +384,10 @@
     <div class="font-bold text-xl text-surface-900 dark:text-surface-0">
       الأجهزة المدرجة في عملية الحصر وحالة تسجيلها
     </div>
-    @if (hasUnregisteredItems()) {
+    <!--
+      ✅ hasUnregisteredItems() الآن computed signal — مش دالة بتُحسب في كل render
+    -->
+    @if (hasUnregisteredItems() && authService.hasPermission('asset:create')) {
       <button
         pButton
         icon="pi pi-check-square"
@@ -474,18 +421,11 @@
       </ng-template>
       <ng-template #body let-item>
         <tr>
-          <td>
-            {{
-              facilitiesService.departmentsMap().get(item.departmentID || item.departmentId) ||
-                'غير معروف'
-            }}
-          </td>
+          <td>{{ facilitiesService.facilityDepartmentsMap().get(item.departmentID || item.departmentId) || 'غير معروف' }}</td>
           <td>{{ item.equipmentNameSnapshot }}</td>
           <td>{{ item.serialNumberSnapshot || '-' }}</td>
           <td>
-            <p-tag
-              [severity]="equipmentStatusMap.get(item.statusSnapshot)?.severity || 'secondary'"
-            >
+            <p-tag [severity]="equipmentStatusMap.get(item.statusSnapshot)?.severity || 'secondary'">
               {{ equipmentStatusMap.get(item.statusSnapshot)?.label || item.statusSnapshot }}
             </p-tag>
           </td>
@@ -504,7 +444,9 @@
                 label="تسجيل الجهاز كأصل"
                 class="p-button-sm p-button-warning"
                 (click)="registerUnregisteredAsset(item)"
+                *ngIf="authService.hasPermission('asset:create')"
               ></button>
+              <span *ngIf="!authService.hasPermission('asset:create')" class="text-gray-400 text-xs">غير مسجل</span>
             } @else {
               <span class="text-green-600 font-semibold text-sm">
                 <i class="pi pi-check-circle"></i> تم التسجيل والمطابقة

@@ -8,6 +8,7 @@ import { Select } from 'primeng/select';
 import { Subscription } from 'rxjs';
 import { DashboardService, IDashboardMetrics, IRecentActivity } from '../../services/dashboard';
 import { FacilitiesSerive } from '../../services/facilities';
+import { AuthService } from '../../services/auth-service';
 
 @Component({
   selector: 'app-home',
@@ -51,7 +52,7 @@ export class Home implements OnInit, OnDestroy {
       colorClass: 'kpi-amber',
     },
     {
-      title: 'حملات الجرد',
+      title: 'حملات الحصر',
       value: '0',
       trend: '+14.2%',
       trendUp: true,
@@ -67,7 +68,8 @@ export class Home implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly dashboardService: DashboardService,
     private readonly facilitiesService: FacilitiesSerive,
-    private readonly cdr:ChangeDetectorRef
+    private readonly cdr:ChangeDetectorRef,
+    public readonly authService: AuthService
   ) {}
 
   get regions() {
@@ -82,10 +84,25 @@ export class Home implements OnInit, OnDestroy {
     return all;
   }
 
+  get showFilters(): boolean {
+    const user = this.authService.user();
+    if (!user) return false;
+    if (user.roleId === '1') return true; // Admins always see filters
+    return !!(user.facilities && user.facilities.length > 1);
+  }
+
   ngOnInit() {
     this.facilitiesService.loadRegions();
     this.facilitiesService.loadFacilities(true);
-    this.subscribeToLiveUpdates();
+
+    const user = this.authService.user();
+    if (user && user.facilities && user.facilities.length === 1) {
+      this.selectedFacilityId = user.facilities[0].id;
+    }
+
+    if (this.authService.hasPermission('dashboard:read')) {
+      this.subscribeToLiveUpdates();
+    }
     this.cdr.detectChanges();
   }
 
@@ -135,19 +152,27 @@ export class Home implements OnInit, OnDestroy {
     this.kpiCards = [
       {
         ...this.kpiCards[0],
-        value: metrics.kpis.totalFacilities.toLocaleString(),
+        value: metrics.kpis.totalFacilities.value.toLocaleString(),
+        trend: metrics.kpis.totalFacilities.trend,
+        trendUp: metrics.kpis.totalFacilities.trendUp,
       },
       {
         ...this.kpiCards[1],
-        value: metrics.kpis.totalAssets.toLocaleString(),
+        value: metrics.kpis.totalAssets.value.toLocaleString(),
+        trend: metrics.kpis.totalAssets.trend,
+        trendUp: metrics.kpis.totalAssets.trendUp,
       },
       {
         ...this.kpiCards[2],
-        value: metrics.kpis.needRequests.toLocaleString(),
+        value: metrics.kpis.needRequests.value.toLocaleString(),
+        trend: metrics.kpis.needRequests.trend,
+        trendUp: metrics.kpis.needRequests.trendUp,
       },
       {
         ...this.kpiCards[3],
-        value: metrics.kpis.inventoryCampaigns.toLocaleString(),
+        value: metrics.kpis.inventoryCampaigns.value.toLocaleString(),
+        trend: metrics.kpis.inventoryCampaigns.trend,
+        trendUp: metrics.kpis.inventoryCampaigns.trendUp,
       },
     ];
 

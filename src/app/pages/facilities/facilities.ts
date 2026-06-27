@@ -13,6 +13,7 @@ import { Menu } from 'primeng/menu';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth-service';
 
 @Component({
   selector: 'app-facilities',
@@ -87,51 +88,58 @@ export class Facilities {
   }
 
   activeItem: any = null;
-  menuItems = [
-    {
-      label: 'عرض التفاصيل / تعديل',
-      icon: 'pi pi-pencil',
-      command: () => {
-        if (this.activeItem) {
-          this.editFacility(this.activeItem.facilityID);
+  get menuItems() {
+    return [
+      {
+        label: 'عرض التفاصيل / تعديل',
+        icon: 'pi pi-pencil',
+        visible: this.authService.hasPermission('facility:update'),
+        command: () => {
+          if (this.activeItem) {
+            this.editFacility(this.activeItem.facilityID);
+          }
+        }
+      },
+      {
+        label: 'عرض الأصول',
+        icon: 'pi pi-desktop',
+        visible: this.authService.hasPermission('asset:read'),
+        command: () => {
+          if (this.activeItem) {
+            this.router.navigate(['/assets'], { queryParams: { facilityId: this.activeItem.facilityID } });
+          }
+        }
+      },
+      {
+        label: 'بدء الجرد',
+        icon: 'pi pi-clipboard',
+        visible: this.authService.hasPermission('inventory:create'),
+        command: () => {
+          if (this.activeItem) {
+            this.router.navigate(['/inventory'], { queryParams: { facilityId: this.activeItem.facilityID } });
+          }
+        }
+      },
+      {
+        label: 'حذف الجهة',
+        icon: 'pi pi-trash',
+        visible: this.authService.hasPermission('facility:delete'),
+        command: () => {
+          if (this.activeItem) {
+            this.toastService.add({
+              severity: 'warn',
+              summary: 'لا يمكن الحذف',
+              detail: 'عذرا، لا يمكن حذف هذه الجهة لوجود أصول طبية مرتبطة بها حاليا'
+            });
+          }
         }
       }
-    },
-    {
-      label: 'عرض الأصول',
-      icon: 'pi pi-desktop',
-      command: () => {
-        if (this.activeItem) {
-          this.router.navigate(['/assets'], { queryParams: { facilityId: this.activeItem.facilityID } });
-        }
-      }
-    },
-    {
-      label: 'بدء الجرد',
-      icon: 'pi pi-clipboard',
-      command: () => {
-        if (this.activeItem) {
-          this.router.navigate(['/inventory'], { queryParams: { facilityId: this.activeItem.facilityID } });
-        }
-      }
-    },
-    {
-      label: 'حذف الجهة',
-      icon: 'pi pi-trash',
-      command: () => {
-        if (this.activeItem) {
-          this.toastService.add({
-            severity: 'warn',
-            summary: 'لا يمكن الحذف',
-            detail: 'عذرا، لا يمكن حذف هذه الجهة لوجود أصول طبية مرتبطة بها حاليا'
-          });
-        }
-      }
-    }
-  ];
+    ];
+  }
 
   constructor(
     protected facilitiesService: FacilitiesSerive,
+    public readonly authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
     private toastService: MessageService

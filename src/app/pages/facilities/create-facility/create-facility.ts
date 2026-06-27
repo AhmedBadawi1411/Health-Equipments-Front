@@ -240,7 +240,7 @@ export class CreateFacility implements OnInit, AfterViewInit {
         this.facilitesService.loadFacilities(true);
         setTimeout(() => {
           this.isSaving = false;
-          this.router.navigate(['/facilities']);
+          this.activeTab.set("department");
         }, 1500);
       },
       error: (err) => {

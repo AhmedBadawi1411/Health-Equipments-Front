@@ -4,6 +4,7 @@
 <div class="assets-layout">
   <div class="header">
     <app-section-header
+      [showAddButton]="authService.hasPermission('facility:create')"
       (onAddClickedEvent)="onAdd()"
       sectionTitle="إدارة الجهات الصحية"
       actionLabel="إضافة منشأة جديدة"
@@ -13,7 +14,7 @@
   <div class="filters-wrapper flex flex-row gap-4 items-end">
     <app-text-box-with-label [(value)]="searchText"></app-text-box-with-label>
     <app-select-with-label [(selectedItem)]="selectedType" [optionsList]="typeOptions" label="نوع الجهة" placeholder="اختر النوع"></app-select-with-label>
-    <app-select-with-label [(selectedItem)]="selectedStatus" [optionsList]="statusOptions" label="حالة الجرد" placeholder="اختر الحالة"></app-select-with-label>
+    <app-select-with-label [(selectedItem)]="selectedStatus" [optionsList]="statusOptions" label="حالة الحصر" placeholder="اختر الحالة"></app-select-with-label>
     <app-select-with-label [(selectedItem)]="selectedRegion" [optionsList]="regionOptions()" label="المنطقة" placeholder="اختر المنطقة"></app-select-with-label>
     
     <div class="pb-1!">
@@ -51,7 +52,7 @@
           <th>العنوان</th>
           <th>المستوي</th>
           <th>السعة</th>
-          <th>حالة الجرد</th>
+          <th>حالة الحصر</th>
           <th class="w-24 text-center">الاجراءات</th>
         </tr>
       </ng-template>

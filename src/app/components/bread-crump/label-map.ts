@@ -11,7 +11,7 @@ export const BreadCrumpLabelMap: Record<string, string> = {
   '/needs': 'طلبات الإحتياج',
   '/map': 'التحليلات المكانية',
   '/home': 'لوحة المعلومات',
-  '/inventory': 'عمليات الجرد',
+  '/inventory': 'عمليات الحصر',
   '/maintenance': 'عمليات الصيانة',
   '/users': 'المستخدمين',
   '/users/create': 'إضافة مستخدم جديد',

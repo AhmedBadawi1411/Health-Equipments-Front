@@ -8,23 +8,23 @@ export class HttpClientWrapper {
   constructor(private readonly http: HttpClient) {}
 
   get<T>(url: string, options?: AppRequestOptions) {
-    return this.http.get<T>(url, options);
+    return this.http.get<T>(url, { withCredentials: true, ...options });
   }
 
   post<T>(url: string, body?: unknown, options?: AppRequestOptions) {
-    return this.http.post<T>(url, body, options);
+    return this.http.post<T>(url, body, { withCredentials: true, ...options });
   }
 
   put<T>(url: string, body?: unknown, options?: AppRequestOptions) {
-    return this.http.put<T>(url, body, options);
+    return this.http.put<T>(url, body, { withCredentials: true, ...options });
   }
 
   patch<T>(url: string, body?: unknown, options?: AppRequestOptions) {
-    return this.http.patch<T>(url, body, options);
+    return this.http.patch<T>(url, body, { withCredentials: true, ...options });
   }
 
   delete<T>(url: string, options?: AppRequestOptions) {
-    return this.http.delete<T>(url, options);
+    return this.http.delete<T>(url, { withCredentials: true, ...options });
   }
 }
 

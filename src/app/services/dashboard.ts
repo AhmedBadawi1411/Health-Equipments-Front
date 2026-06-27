@@ -14,12 +14,18 @@ export interface IRecentActivity {
   type: string;
 }
 
+export interface IKpiInfo {
+  value: number;
+  trend: string;
+  trendUp: boolean;
+}
+
 export interface IDashboardMetrics {
   kpis: {
-    totalFacilities: number;
-    totalAssets: number;
-    needRequests: number;
-    inventoryCampaigns: number;
+    totalFacilities: IKpiInfo;
+    totalAssets: IKpiInfo;
+    needRequests: IKpiInfo;
+    inventoryCampaigns: IKpiInfo;
   };
   barChartData: { label: string; value: number }[];
   inventoryDistribution: { name: string; value: number; color: string }[];
@@ -51,7 +57,7 @@ export class DashboardService {
       if (regionId) url.searchParams.append('regionId', regionId.toString());
       if (facilityId) url.searchParams.append('facilityId', facilityId.toString());
 
-      const eventSource = new EventSource(url.toString());
+      const eventSource = new EventSource(url.toString(), {withCredentials:true});
 
       eventSource.onmessage = (event) => {
         try {

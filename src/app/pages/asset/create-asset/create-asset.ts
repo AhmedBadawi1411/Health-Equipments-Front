@@ -34,7 +34,7 @@ import { forkJoin, switchMap, of, map } from 'rxjs';
     InputIcon,
     SectionHeader,
     TableModule,
-    ToastModule
+    ToastModule,
   ],
   providers: [MessageService],
   templateUrl: './create-asset.html',
@@ -81,7 +81,7 @@ export class CreateAsset implements OnInit {
     private readonly router: Router,
     private readonly route: ActivatedRoute,
     private readonly departmentService: DepartmentsSerive,
-    private readonly toast: MessageService
+    private readonly toast: MessageService,
   ) {}
 
   ngOnInit(): void {
@@ -102,7 +102,7 @@ export class CreateAsset implements OnInit {
     if (idParam) {
       this.isEditMode = true;
       this.assetId = Number(idParam);
-      
+
       this.assetsService.getAsset(this.assetId).subscribe({
         next: (res) => {
           const asset = res.data;
@@ -123,23 +123,27 @@ export class CreateAsset implements OnInit {
           this.toast.add({
             severity: 'error',
             summary: 'خطأ في التحميل',
-            detail: 'فشل تحميل بيانات الأصل الطبي المطلوب.'
+            detail: 'فشل تحميل بيانات الأصل الطبي المطلوب.',
           });
-        }
+        },
       });
       return;
     }
 
     // Read query parameters for auto-population from inventory survey process
     const qParams = this.route.snapshot.queryParams;
-    
+
     // Support single item registration
     if (qParams['facilityId'] && !qParams['surveyId']) {
       const facilityID = Number(qParams['facilityId']);
       const departmentID = Number(qParams['departmentId']);
-      
+
       let assetType: number | undefined = undefined;
-      if (qParams['assetType'] && qParams['assetType'] !== 'null' && qParams['assetType'] !== 'undefined') {
+      if (
+        qParams['assetType'] &&
+        qParams['assetType'] !== 'null' &&
+        qParams['assetType'] !== 'undefined'
+      ) {
         const parsedType = Number(qParams['assetType']);
         if (!isNaN(parsedType) && parsedType !== 0) {
           assetType = parsedType;
@@ -158,7 +162,7 @@ export class CreateAsset implements OnInit {
         installationDate: new Date(),
         purchaseDate: new Date(),
       };
-      
+
       // Store the surveyItemId so we can resolve it on save
       (this.currentAsset as any).surveyItemId = surveyItemId;
 
@@ -173,17 +177,15 @@ export class CreateAsset implements OnInit {
         next: (res) => {
           const survey = res.data;
           const facilityId = survey.facilityID || (survey as any).facilityId;
-          
+
           // Filter items that need registration
-          const unregisteredItems = (survey.items || []).filter(
-            item => item.needRegistration
-          );
+          const unregisteredItems = (survey.items || []).filter((item) => item.needRegistration);
 
           if (unregisteredItems.length === 0) {
             this.toast.add({
               severity: 'info',
               summary: 'تنبيه',
-              detail: 'لا توجد أجهزة غير مسجلة في عملية الحصر هذه.'
+              detail: 'لا توجد أجهزة غير مسجلة في عملية الحصر هذه.',
             });
             return;
           }
@@ -193,10 +195,15 @@ export class CreateAsset implements OnInit {
             this.facilitiesService.loadDepartments(facilityId);
           }
 
-          const mappedAssets = unregisteredItems.map(item => {
+          const mappedAssets = unregisteredItems.map((item) => {
             const deptId = item.departmentID || (item as any).departmentId;
             let assetId = item.assetID !== undefined ? item.assetID : (item as any).assetId;
-            if (assetId === null || assetId === undefined || isNaN(Number(assetId)) || Number(assetId) === 0) {
+            if (
+              assetId === null ||
+              assetId === undefined ||
+              isNaN(Number(assetId)) ||
+              Number(assetId) === 0
+            ) {
               assetId = undefined;
             } else {
               assetId = Number(assetId);
@@ -209,11 +216,11 @@ export class CreateAsset implements OnInit {
               departmentID: deptId,
               assetId: assetId,
               assetType: item.equipmentMasterID,
-              assetStatus: "2", // Active
+              assetStatus: '2', // Active
               assetSerial: serial || '',
               installationDate: new Date(),
               purchaseDate: new Date(),
-              surveyItemId: surveyItemId
+              surveyItemId: surveyItemId,
             } as any;
           });
 
@@ -222,7 +229,7 @@ export class CreateAsset implements OnInit {
           this.toast.add({
             severity: 'success',
             summary: 'تم تحميل البيانات بنجاح',
-            detail: `تم تحميل عدد ${mappedAssets.length} أجهزة غير مسجلة من عملية الحصر.`
+            detail: `تم تحميل عدد ${mappedAssets.length} أجهزة غير مسجلة من عملية الحصر.`,
           });
         },
         error: (err) => {
@@ -230,9 +237,9 @@ export class CreateAsset implements OnInit {
           this.toast.add({
             severity: 'error',
             summary: 'خطأ',
-            detail: 'فشل تحميل بيانات عملية الحصر.'
+            detail: 'فشل تحميل بيانات عملية الحصر.',
           });
-        }
+        },
       });
     }
   }
@@ -275,9 +282,26 @@ export class CreateAsset implements OnInit {
       this.toast.add({
         severity: 'error',
         summary: 'خطأ في التحقق',
-        detail: 'يرجى ملء كافة الحقول الإلزامية: الجهة، القسم، نوع الجهاز، حالته ورقم تسلسله.'
+        detail: 'يرجى ملء كافة الحقول الإلزامية: الجهة، القسم، نوع الجهاز، حالته ورقم تسلسله.',
       });
       return;
+    }
+
+    if (this.editingIndex === null) {
+      const currentSerial = this.currentAsset.assetSerial?.trim().toLowerCase();
+      const serialExists = this.assetsToSave().some(
+        (asset, index) =>
+          index !== this.editingIndex && asset.assetSerial?.trim().toLowerCase() === currentSerial,
+      );
+
+      if (serialExists) {
+        this.toast.add({
+          severity: 'error',
+          summary: 'رقم تسلسل مكرر',
+          detail: 'الأصل الذي تحاول إضافته يحتوي على رقم تسلسل موجود بالفعل في القائمة.',
+        });
+        return;
+      }
     }
 
     if (this.editingIndex !== null) {
@@ -320,7 +344,7 @@ export class CreateAsset implements OnInit {
       this.toast.add({
         severity: 'warn',
         summary: 'قائمة فارغة',
-        detail: 'يرجى إضافة أصل واحد على الأقل إلى الجدول قبل الحفظ.'
+        detail: 'يرجى إضافة أصل واحد على الأقل إلى الجدول قبل الحفظ.',
       });
       return;
     }
@@ -329,25 +353,27 @@ export class CreateAsset implements OnInit {
 
     const requests = assets.map((a) => {
       console.log(a);
-      
+
       const payload = {
         equipmentTypeId: a.assetType,
         serialNumber: a.assetSerial!,
         purchaseDate: a.purchaseDate ? new Date(a.purchaseDate).toISOString() : undefined,
-        installationDate: a.installationDate ? new Date(a.installationDate).toISOString() : undefined,
+        installationDate: a.installationDate
+          ? new Date(a.installationDate).toISOString()
+          : undefined,
         departmentId: Number(a.departmentID),
         facilityId: Number(a.facilityID),
         statusId: Number(a.assetStatus),
-        supplierId: a.supplierId ? Number(a.supplierId) : undefined
+        supplierId: a.supplierId ? Number(a.supplierId) : undefined,
       };
 
       console.log(payload);
-      
+
       const surveyItemId = (a as any).surveyItemId;
       const obs = surveyItemId
         ? this.assetsService.resolveSurveyToAsset({
             ...payload,
-            surveyItemId: Number(surveyItemId)
+            surveyItemId: Number(surveyItemId),
           })
         : this.assetsService.createAsset(payload);
 
@@ -355,15 +381,15 @@ export class CreateAsset implements OnInit {
         return obs.pipe(
           switchMap((res) => {
             if (res.success && res.data && res.data.assetId) {
-              return this.assetsHelper.attachAssetToContract({
-                assetId: res.data.assetId,
-                contractId: Number(a.contractID)
-              }).pipe(
-                map(() => res)
-              );
+              return this.assetsHelper
+                .attachAssetToContract({
+                  assetId: res.data.assetId,
+                  contractId: Number(a.contractID),
+                })
+                .pipe(map(() => res));
             }
             return of(res);
-          })
+          }),
         );
       }
       return obs;
@@ -374,7 +400,7 @@ export class CreateAsset implements OnInit {
         this.toast.add({
           severity: 'success',
           summary: 'تم الحفظ بنجاح',
-          detail: `تم إضافة عدد ${responses.length} أصل/أصول بنجاح.`
+          detail: `تم إضافة عدد ${responses.length} أصل/أصول بنجاح.`,
         });
         this.assetsToSave.set([]);
         this.assetsService.loadAssets(true);
@@ -395,9 +421,9 @@ export class CreateAsset implements OnInit {
         this.toast.add({
           severity: 'error',
           summary: 'فشل الحفظ',
-          detail: err.error?.message || 'حدث خطأ أثناء حفظ الأصول. يرجى المحاولة مرة أخرى.'
+          detail: err.error?.message || 'حدث خطأ أثناء حفظ الأصول. يرجى المحاولة مرة أخرى.',
         });
-      }
+      },
     });
   }
 
@@ -412,7 +438,7 @@ export class CreateAsset implements OnInit {
       this.toast.add({
         severity: 'error',
         summary: 'خطأ في التحقق',
-        detail: 'يرجى ملء كافة الحقول الإلزامية: الجهة، القسم، نوع الجهاز، حالته ورقم تسلسله.'
+        detail: 'يرجى ملء كافة الحقول الإلزامية: الجهة، القسم، نوع الجهاز، حالته ورقم تسلسله.',
       });
       return;
     }
@@ -421,12 +447,16 @@ export class CreateAsset implements OnInit {
     const payload = {
       equipmentTypeId: this.currentAsset.assetType,
       serialNumber: this.currentAsset.assetSerial!,
-      purchaseDate: this.currentAsset.purchaseDate ? new Date(this.currentAsset.purchaseDate).toISOString() : undefined,
-      installationDate: this.currentAsset.installationDate ? new Date(this.currentAsset.installationDate).toISOString() : undefined,
+      purchaseDate: this.currentAsset.purchaseDate
+        ? new Date(this.currentAsset.purchaseDate).toISOString()
+        : undefined,
+      installationDate: this.currentAsset.installationDate
+        ? new Date(this.currentAsset.installationDate).toISOString()
+        : undefined,
       departmentId: Number(this.currentAsset.departmentID),
       facilityId: Number(this.currentAsset.facilityID),
       statusId: Number(this.currentAsset.assetStatus),
-      supplierId: this.currentAsset.supplierId ? Number(this.currentAsset.supplierId) : undefined
+      supplierId: this.currentAsset.supplierId ? Number(this.currentAsset.supplierId) : undefined,
     };
 
     const updateObs = this.assetsService.updateAsset(this.assetId!, payload);
@@ -434,13 +464,13 @@ export class CreateAsset implements OnInit {
     const finalObs = this.currentAsset.contractID
       ? updateObs.pipe(
           switchMap((res) => {
-            return this.assetsHelper.attachAssetToContract({
-              assetId: this.assetId!,
-              contractId: Number(this.currentAsset.contractID)
-            }).pipe(
-              map(() => res)
-            );
-          })
+            return this.assetsHelper
+              .attachAssetToContract({
+                assetId: this.assetId!,
+                contractId: Number(this.currentAsset.contractID),
+              })
+              .pipe(map(() => res));
+          }),
         )
       : updateObs;
 
@@ -449,7 +479,7 @@ export class CreateAsset implements OnInit {
         this.toast.add({
           severity: 'success',
           summary: 'تم التحديث بنجاح',
-          detail: 'تم تحديث بيانات الأصل الطبي بنجاح.'
+          detail: 'تم تحديث بيانات الأصل الطبي بنجاح.',
         });
         setTimeout(() => {
           this.isSaving = false;
@@ -462,9 +492,9 @@ export class CreateAsset implements OnInit {
         this.toast.add({
           severity: 'error',
           summary: 'فشل التحديث',
-          detail: err.error?.message || 'حدث خطأ أثناء تحديث بيانات الأصل. يرجى المحاولة مرة أخرى.'
+          detail: err.error?.message || 'حدث خطأ أثناء تحديث بيانات الأصل. يرجى المحاولة مرة أخرى.',
         });
-      }
+      },
     });
   }
 }

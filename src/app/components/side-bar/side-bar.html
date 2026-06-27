@@ -15,53 +15,63 @@
 
   <div class="p-3!">
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('dashboard:read')"
       route="home"
       [iconUrl]="Icons.Dashboard"
       textContent="لوحة المعلومات"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('gis:analysis')"
       route="map"
       [iconUrl]="Icons.GisMap"
       textContent="التحليلات المكانية"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('facility:read')"
       route="facilities"
       [iconUrl]="Icons.Facilities"
       textContent="الجهات الصحية"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('asset:read')"
       route="assets"
       [iconUrl]="Icons.Assets"
       textContent="إدارة الأصول"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('asset:read')"
       route="assets"
       [iconUrl]="Icons.Assets"
       textContent="إدارة المستلزمات"
       [disabled]="true"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('inventory:read')"
       route="inventory"
       [iconUrl]="Icons.Inventory"
       textContent="عمليات الحصر"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('request:read')"
       route="needs"
       [iconUrl]="Icons.Needs"
       textContent="طلبات االإحتياح"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('maintenance:read')"
       route="maintenance"
       [iconUrl]="Icons.Maintenance"
       textContent="الصيانة"
       [disabled]="true"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('user:read')"
       route="users"
       [iconUrl]="Icons.Users"
       textContent="المستخدمين"
     ></app-side-bar-btn>
     <app-side-bar-btn
+      *ngIf="authService.hasPermission('dashboard:read')"
       route="reports"
       [iconUrl]="Icons.Reports"
       textContent="التقارير"

@@ -28,7 +28,7 @@ export class NeedRequests implements OnInit {
   constructor(
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly authService: AuthService,
+    public readonly authService: AuthService,
     protected readonly needsService: NeedsService,
     private readonly toast: MessageService
   ) {}

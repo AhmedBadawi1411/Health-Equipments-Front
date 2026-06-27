@@ -3,10 +3,11 @@ import { SideBarBtn } from "../side-bar-btn/side-bar-btn";
 import { Icons } from '../../environment';
 import { AuthService } from '../../services/auth-service';
 import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-side-bar',
-  imports: [SideBarBtn],
+  imports: [SideBarBtn, CommonModule],
   templateUrl: './side-bar.html',
   styleUrl: './side-bar.css',
 })
@@ -14,7 +15,7 @@ export class SideBar {
   protected readonly Icons = Icons;
 
   constructor(
-    private readonly authService: AuthService,
+    public readonly authService: AuthService,
     private readonly router: Router
   ) {}
 
