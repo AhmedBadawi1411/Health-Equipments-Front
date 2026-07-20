@@ -35,6 +35,7 @@
             [fluid]="true"
             placeholder="example@hospital.gov"
             [(ngModel)]="email"
+            (keyup.enter)="login()"
           />
         </p-iconfield>
       </span>
@@ -50,6 +51,7 @@
             pInputText
             placeholder="ادخل كلمة المرور"
             [(ngModel)]="password"
+            (keyup.enter)="login()"
           />
         </p-iconfield>
       </span>
