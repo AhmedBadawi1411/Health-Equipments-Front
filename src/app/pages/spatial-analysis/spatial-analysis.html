@@ -1,16 +1,16 @@
 <div class="spatial-wrapper">
-  <div class="map-area">
+  <div class="map-area card-shadow ">
     <div id="map"></div>
   </div>
 
-  <div class="sidebar">
+  <div class="sidebar card-shadow">
     <!-- ───────── Header ───────── -->
     <div class="sidebar-header">
       <div class="sidebar-title-row">
         <i class="pi pi-map sidebar-icon"></i>
         <h2 class="sidebar-title">التحليل المكاني</h2>
       </div>
-      <p class="sidebar-subtitle">خريطة الجهات الصحية وتوزيع التجهيزات</p>
+      <p class="sidebar-subtitle">خريطة المرافق الصحية وتوزيع التجهيزات</p>
     </div>
 
     <!-- ───────── KPI Strip ───────── -->
@@ -22,12 +22,12 @@
       <div class="kpi-divider"></div>
       <div class="kpi-item">
         <span class="kpi-val text-green-500">{{ approvedCount }}</span>
-        <span class="kpi-lbl">مكتمل الجرد</span>
+        <span class="kpi-lbl">مكتمل الحصر</span>
       </div>
       <div class="kpi-divider"></div>
       <div class="kpi-item">
         <span class="kpi-val text-amber-500">{{ inProgressCount }}</span>
-        <span class="kpi-lbl">قيد الجرد</span>
+        <span class="kpi-lbl">قيد الحصر</span>
       </div>
       <div class="kpi-divider"></div>
       <div class="kpi-item">
@@ -88,13 +88,13 @@
           [(ngModel)]="selectedRegionFilter"
           (ngModelChange)="onFilterChange()"
           class="w-full"
-          placeholder="كل المناطق"
+          placeholder="كل البلديات"
           appendTo="body"
         />
       </div>
 
       <div class="filter-section">
-        <label class="filter-label">تصفية حسب نوع الجهة</label>
+        <label class="filter-label">تصفية حسب نوع المرفق</label>
         <p-select
           [options]="facilityTypeOptions"
           optionLabel="label"
@@ -109,7 +109,7 @@
       </div>
 
       <div class="filter-section">
-        <label class="filter-label">تصفية حسب حالة الجرد</label>
+        <label class="filter-label">تصفية حسب حالة الحصر</label>
         <p-select
           [options]="statusOptions"
           optionLabel="label"
@@ -288,7 +288,7 @@
             </label>
           </div>
           <p class="analytic-desc">
-            يقسم الخريطة إلى مناطق نفوذ لكل جهة — ملونة بحالة الجرد لكشف الفجوات.
+            يقسم الخريطة إلى مناطق نفوذ لكل جهة — ملونة بحالة الحصر لكشف الفجوات.
           </p>
         </div>
 
@@ -297,7 +297,7 @@
           <div class="analytic-header">
             <div class="analytic-info">
               <span class="analytic-badge nearest">اتصال</span>
-              <span class="analytic-name">خطوط الجهة الأقرب</span>
+              <span class="analytic-name">خطوط المرفق الأقرب</span>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" [(ngModel)]="showNearest" (change)="onNearestToggle()" />
@@ -319,7 +319,7 @@
           <div class="analytic-header">
             <div class="analytic-info">
               <span class="analytic-badge centroid">مركز</span>
-              <span class="analytic-name">مركز ثقل المناطق</span>
+              <span class="analytic-name">مركز ثقل البلديات</span>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" [(ngModel)]="showCentroid" (change)="onCentroidToggle()" />
@@ -350,13 +350,13 @@
       <div class="legend-section">
         <div class="legend-title">
           @if (colorMode() === 'status') {
-            دليل الألوان — حالة الجرد
+            دليل الألوان — حالة الحصر
           }
           @if (colorMode() === 'type') {
-            دليل الألوان — نوع الجهة
+            دليل الألوان — نوع المرفق
           }
           @if (colorMode() === 'region') {
-            الألوان تمثل المناطق المختلفة
+            الألوان تمثل البلديات المختلفة
           }
         </div>
 
@@ -403,7 +403,7 @@
           @if (showNearest) {
             <div class="legend-item">
               <span class="legend-line dashed red"></span>
-              <span class="legend-txt">خط الجهة الأقرب</span>
+              <span class="legend-txt">خط المرفق الأقرب</span>
             </div>
           }
           @if (showCentroid) {

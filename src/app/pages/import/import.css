@@ -1,0 +1,201 @@
+.upload-zone {
+        border: 2px dashed var(--p-primary-color, #6366f1);
+        border-radius: 16px;
+        background: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
+        cursor: pointer;
+        transition:
+                border-color 0.2s,
+                background 0.2s,
+                box-shadow 0.2s;
+}
+
+.upload-zone:hover,
+.upload-zone.dragging {
+        border-color: var(--k-primary);
+        background: linear-gradient(135deg, #e9f0fe 0%, #d6e6fe 100%);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
+.upload-icon-wrapper {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--k-primary), var(--k-primary-300));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
+
+.header-badge {
+        background: #e0e7ff;
+        color: var(--color-slate-500);
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+}
+
+.headers-hint {
+        background: #f8faff;
+        border: 1px solid #e0e7ff;
+        border-radius: 12px;
+        padding: 12px 16px;
+        max-width: 700px;
+}
+
+/* Step indicator */
+.step-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        transition:
+                background 0.2s,
+                color 0.2s;
+}
+
+.step-circle.active {
+        background: var(--p-primary-color, #6366f1);
+        color: white;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
+}
+
+.step-circle.done {
+        background: #10b981;
+        color: white;
+}
+
+.step-label {
+        color: #64748b;
+}
+
+/* Stat cards */
+.stat-card {
+        border-radius: 14px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.stat-card.total {
+        background: #F0F4F8;
+        color: #1E293B;
+        border: 1px solid #e2e8f0;
+}
+
+.stat-card.valid {
+        background: #ECFDF5;
+        color: #10B981;
+        border: 1px solid #a7f3d0;
+}
+
+.stat-card.invalid {
+        background: #FEF2F2;
+        color: #EF4444;
+        border: 1px solid #fecaca;
+}
+
+.stat-card.duplicate {
+        background: #FFF7ED;
+        color: #F97316;
+        border: 1px solid #fde68a;
+}
+
+.stat-card.null {
+        background: #FFF3EB;
+        color: #9A3412;
+        border: 1px solid #fed7aa;
+}
+
+.stat-card.warning {
+        background: #F5F3FF;
+        color: #8B5CF6;
+        border: 1px solid #cdbcf5;
+}
+
+.stat-value {
+        font-size: 24px;
+        font-weight: 800;
+        line-height: 1;
+}
+
+.stat-label {
+        font-size: 11px;
+        font-weight: 600;
+        opacity: 0.7;
+        margin-top: 2px;
+}
+
+/* Department cards */
+.dept-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        transition: box-shadow 0.2s;
+}
+
+.dept-card:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.09);
+}
+
+.dept-card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f8faff;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e2e8f0;
+}
+
+.dept-card-body {
+        padding: 14px 16px;
+}
+
+/* Row invalid highlight */
+.row-invalid td {
+        background: #fff5f5 !important;
+}
+
+/* Submit preview */
+.submit-preview-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        background: linear-gradient(135deg, #f0f4ff, #ede9fe);
+        border-radius: 14px;
+        padding: 20px 24px;
+        border: 1px solid #c7d2fe;
+}
+
+/* Mapping chip */
+.mapping-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 13px;
+}
+
+/* Review dialog summary */
+.review-dialog-summary {
+        background: #f8faff;
+        border: 1px solid #e0e7ff;
+        border-radius: 10px;
+        padding: 12px 16px;
+}

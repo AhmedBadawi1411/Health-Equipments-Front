@@ -1,6 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
 
-@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&family=Estedad:wght@100..900&family=Readex+Pro:wght@160..700&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 @import 'tailwindcss';
 @import "primeicons/primeicons.css";
 @import "./customPrime.css";
@@ -9,6 +9,7 @@
         --k-hover: #F2F9F9;
 
         --k-primary: #1975D2;
+        --k-primary-active: #0891B2;
         --k-primary-opc-100: #1976d236;
         --k-primary-dark-200: #00315F;
         --k-primary-dark-100: #004787;
@@ -43,12 +44,16 @@
         --k-font-dark-200: #181C22;
         --k-font-dark-300: #000000;
 
-        --k-background-color: #F8FAFB;
+        --k-background-color: #F0F4F8;
         --k-forground-color: #FFFFFF;
-        --k-secondary-forground-color:#EFF4FF;
+        --k-secondary-forground-color: #EFF4FF;
 
         --k-border: #E2E8F0;
+        --k-borde-2: #E5E7EB;
 
+        --k-primary-text: #111827;
+        --k-secondary-text: #6B7280;
+        --k-muted: #9CA3AF;
 }
 
 * {
@@ -56,7 +61,7 @@
         margin: 0;
         box-sizing: border-box;
 
-        font-family: "Alexandria", sans-serif;
+        font-family: 'Alexandria', sans-serif;
 }
 
 html {
@@ -77,12 +82,11 @@ app-root {
 }
 
 .p-button {
-        border-radius: 4px !important;
-        -webkit-border-radius: 4px !important;
-        -moz-border-radius: 4px !important;
-        -ms-border-radius: 4px !important;
-        -o-border-radius: 4px !important;
-
+        border-radius: 18px !important;
+        -webkit-border-radius: 18px !important;
+        -moz-border-radius: 18px !important;
+        -ms-border-radius: 18px !important;
+        -o-border-radius: 18px !important;
 }
 
 .p-button-label {
@@ -92,17 +96,17 @@ app-root {
 }
 
 .p-placeholder,
-.p-inputtext::placeholder{
+.p-inputtext::placeholder {
         color: var(--color-gray-400) !important;
         font-size: 12px !important;
 }
 
 .p-select {
-  width: 100%;
+        width: 100%;
 }
 
 app-text-box-with-label,
-app-select-with-label{
+app-select-with-label {
         width: 100%;
 }
 
@@ -111,17 +115,18 @@ app-select-with-label{
 }
 
 body .p-component {
-    font-size: 0.9rem !important; 
+        font-size: 0.9rem !important;
 }
 
 .p-breadcrumb {
-  direction: rtl !important;
-  background-color: transparent !important;
+        direction: rtl !important;
+        background-color: transparent !important;
 }
 
 .p-breadcrumb .p-breadcrumb-separator {
-  transform: rotate(180deg);
+        transform: rotate(180deg);
 }
+
 button {
         cursor: pointer;
 }
@@ -134,68 +139,159 @@ button {
         background-color: var(--k-forground-color);
         padding: 16px;
         margin-bottom: 32px;
-        border-radius: 16px;
-        -webkit-border-radius: 16px;
-        -moz-border-radius: 16px;
-        -ms-border-radius: 16px;
-        -o-border-radius: 16px;
+        border-radius: 18px;
+        -webkit-border-radius: 18px;
+        -moz-border-radius: 18px;
+        -ms-border-radius: 18px;
+        -o-border-radius: 18px;
 }
 
-.card{
-        border-radius: 16px;
-        -webkit-border-radius: 16px;
-        -moz-border-radius: 16px;
-        -ms-border-radius: 16px;
-        -o-border-radius: 16px;
+.card {
+        border-radius: 18px !important;
+        -webkit-border-radius: 18px !important;
+        -moz-border-radius: 18px !important;
+        -ms-border-radius: 18px !important;
+        -o-border-radius: 18px !important;
+        /* overflow: hidden; */
+
 }
 
-.form-wrapper{
+.form-wrapper {
         width: 100%;
         display: grid;
-        grid-template-columns: repeat(2,1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 16px;
         padding: 16px;
         background-color: var(--k-forground-color);
+        border-radius: 18px;
+        -webkit-border-radius: 18px;
+        -moz-border-radius: 18px;
+        -ms-border-radius: 18px;
+        -o-border-radius: 18px;
+
+        --tw-shadow: 0 0 3px 0 var(--tw-shadow-color, #0000001a), 0 0 2px -1px var(--tw-shadow-color, #0000001a);
+        box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+        border: 1px solid #F1F5F9 !important;
         border-radius: 16px;
         -webkit-border-radius: 16px;
         -moz-border-radius: 16px;
         -ms-border-radius: 16px;
         -o-border-radius: 16px;
+        margin: 3px;
         margin-top: 32px;
 }
 
 
 .tab-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #64748b;
-  cursor: pointer;
-  transition: background 0.18s, color 0.18s;
-  font-family: 'Alexandria', sans-serif;
-  -webkit-transition: background 0.18s, color 0.18s;
-  -moz-transition: background 0.18s, color 0.18s;
-  -ms-transition: background 0.18s, color 0.18s;
-  -o-transition: background 0.18s, color 0.18s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 20px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        transition: background 0.18s, color 0.18s;
+        font-family: 'Alexandria', sans-serif;
+        -webkit-transition: background 0.18s, color 0.18s;
+        -moz-transition: background 0.18s, color 0.18s;
+        -ms-transition: background 0.18s, color 0.18s;
+        -o-transition: background 0.18s, color 0.18s;
+        -webkit-border-radius: 8px;
+        -moz-border-radius: 8px;
+        -ms-border-radius: 8px;
+        -o-border-radius: 8px;
 }
 
 .tab-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+        background: #f1f5f9;
+        color: #1e293b;
 }
 
 .tab-btn.active {
-  background: var(--k-primary, #1975D2);
-  color: #fff;
-  font-weight: 600;
+        background: var(--k-primary, #1975D2);
+        color: #fff;
+        font-weight: 600;
 }
 
 .tab-btn.active i {
-  color: #fff;
+        color: #fff;
+}
+
+.spacer {
+        flex: 1;
+        width: 100%;
+}
+
+.p-datatable-thead>tr>th {
+        font-size: .85rem !important;
+        font-weight: 600 !important;
+        color: var(--color-slate-500) !important;
+        background-color: var(--color-slate-50) !important;
+}
+
+
+.page-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: var(--k-primary-text);
+}
+
+.card-shadow {
+        --tw-shadow: 0 0 3px 0 var(--tw-shadow-color, #0000001a), 0 0 2px -1px var(--tw-shadow-color, #0000001a);
+        box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+        border: 1px solid #F1F5F9 !important;
+        border-radius: 16px;
+        -webkit-border-radius: 16px;
+        -moz-border-radius: 16px;
+        -ms-border-radius: 16px;
+        -o-border-radius: 16px;
+        margin: 3px;
+}
+
+button {
+        padding: 10px 16px !important;
+}
+
+.p-datatable-tbody>tr>td {
+        color: var(--color-slate-600) !important;
+        font-size: .85rem;
+}
+
+.p-button-info {
+        background-color: var(--k-primary-active) !important;
+
+        .p-button-label {
+                font-size: .85rem !important;
+
+        }
+}
+
+.p-component.p-paginator {
+        border-radius: 0 0 16px 16px;
+        -webkit-border-radius: 0 0 16px 16px;
+        -moz-border-radius: 0 0 16px 16px;
+        -ms-border-radius: 0 0 16px 16px;
+        -o-border-radius: 0 0 16px 16px;
+}
+
+
+.p-datatable-header {
+        border-radius: 16px 16px 0 0;
+        -webkit-border-radius: 16px 16px 0 0;
+        -moz-border-radius: 16px 16px 0 0;
+        -ms-border-radius: 16px 16px 0 0;
+        -o-border-radius: 16px 16px 0 0;
+}
+
+.pdf-btn .p-button-label {
+        font-size: .8rem !important;
+}
+
+.pdf-btn {
+        padding: 0 !important;
+        margin-top: 6px;
 }

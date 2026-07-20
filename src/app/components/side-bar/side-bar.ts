@@ -1,20 +1,29 @@
-import { Component } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { SideBarBtn } from "../side-bar-btn/side-bar-btn";
 import { Icons } from '../../environment';
 import { AuthService } from '../../services/auth-service';
 import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-side-bar',
-  imports: [SideBarBtn],
+  imports: [SideBarBtn, CommonModule],
   templateUrl: './side-bar.html',
   styleUrl: './side-bar.css',
 })
 export class SideBar {
   protected readonly Icons = Icons;
 
+  @Input() isMinimized = false;
+  @Output() isMinimizedChange = new EventEmitter<boolean>();
+
+  toggleMinimize() {
+    this.isMinimized = !this.isMinimized;
+    this.isMinimizedChange.emit(this.isMinimized);
+  }
+
   constructor(
-    private readonly authService: AuthService,
+    public readonly authService: AuthService,
     private readonly router: Router
   ) {}
 

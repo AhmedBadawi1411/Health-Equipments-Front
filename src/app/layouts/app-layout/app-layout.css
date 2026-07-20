@@ -3,6 +3,11 @@
         display: grid;
         grid-template-columns: 300px 1fr;
         grid-template-rows: 60px 1fr 30px;
+        transition: grid-template-columns 0.2s ease-in-out;
+}
+
+.app-layout.sidebar-minimized {
+        grid-template-columns: 70px 1fr;
 }
 
 .header {
@@ -21,6 +26,15 @@
 .sidebar {
         width: 300px;
         grid-area: 1 / 1 / -1 / 2;
+        transition: width 0.2s ease-in-out;
+        -webkit-transition: width 0.2s ease-in-out;
+        -moz-transition: width 0.2s ease-in-out;
+        -ms-transition: width 0.2s ease-in-out;
+        -o-transition: width 0.2s ease-in-out;
+}
+
+.sidebar.sidebar-minimized {
+        width: 70px !important;
 }
 
 .content {

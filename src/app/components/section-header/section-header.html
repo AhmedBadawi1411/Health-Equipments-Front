@@ -16,7 +16,7 @@
   </ul> -->
   <div class="flex items-start flex-col md:justify-between md:flex-row">
     <div>
-      <div class="font-bold text-2xl text-surface-900 dark:text-surface-0 mb-4!">{{sectionTitle}}</div>
+      <div class="page-title">{{sectionTitle}}</div>
       <div class="flex items-center text-surface-700 dark:text-surface-300 flex-wrap gap-8">
         <!-- <div class="flex items-center gap-2">
           <iconify-icon icon="mingcute:components-line"></iconify-icon>
@@ -34,7 +34,7 @@
     </div>
     <div class="mt-6! md:mt-0! flex items-center">
       @if (showAddButton) {
-        <button pButton class="whitespace-nowrap" (click)="onAddClicked()">
+        <button pButton class="whitespace-nowrap bg-(--k-primary-active)! border-0!" (click)="onAddClicked()">
           <i pButtonIcon [class]="actionIcon"></i>
           <span pButtonLabel>{{actionLabel}}</span>
         </button>

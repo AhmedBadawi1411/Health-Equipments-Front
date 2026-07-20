@@ -25,6 +25,7 @@
 .map-area {
   flex: 1;
   position: relative;
+  overflow: hidden;
   min-width: 0;          /* flex child shrink fix */
 }
 

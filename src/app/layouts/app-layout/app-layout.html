@@ -1,13 +1,13 @@
-<div class="app-layout">
+<div class="app-layout" [class.sidebar-minimized]="isSidebarMinimized">
   <header
     class="header flex flex-row items-center justify-between px-6! border-b border-surface-200 dark:border-surface-800 shadow-sm z-10"
   >
     <!-- Right side: Breadcrumbs and Search -->
     <div class="flex items-center justify-between gap-6 flex-1">
       <div class="flex items-center gap-2 text-sm text-surface-500 font-medium">
-        <span class="text-surface-400">الرئيسية</span>
-        <i class="pi pi-angle-left text-[10px] text-surface-400"></i>
-        <app-bread-crump></app-bread-crump>
+        <!-- <span class="text-surface-400">الرئيسية</span>
+        <i class="pi pi-angle-left text-[10px] text-surface-400"></i> -->
+        <!-- <app-bread-crump></app-bread-crump> -->
         <!-- <span class="text-surface-800 dark:text-surface-100 font-semibold">{{  }}</span> -->
       </div>
 
@@ -36,28 +36,82 @@
       <!-- Notifications -->
       <div
         class="relative cursor-pointer p-2! rounded-lg hover:bg-surface-50 dark:hover:bg-surface-950 text-surface-600 dark:text-surface-300"
+        (click)="toggleNotifications($event); $event.stopPropagation()"
       >
         <i class="pi pi-bell text-lg"></i>
         <span
+          *ngIf="unreadNotificationsCount > 0"
           class="absolute top-1 left-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white"
-          >3</span
+          >{{ unreadNotificationsCount }}</span
         >
+
+        <!-- Notifications Dropdown Menu -->
+        <div
+          *ngIf="isNotificationsOpen"
+          class="absolute left-0 top-12 z-50 w-100 rounded-xl! border border-gray-200 bg-white p-3! shadow-lg! flex flex-col gap-2 transition-all"
+          (click)="$event.stopPropagation()"
+          style="direction: rtl; text-align: right"
+        >
+          <div class="flex items-center justify-between border-b border-surface-100 pb-2!">
+            <span class="text-sm font-semibold text-surface-800">التنبيهات</span>
+            <button
+              *ngIf="unreadNotificationsCount > 0"
+              (click)="markAllRead()"
+              class="text-xs text-blue-600 hover:underline cursor-pointer bg-transparent border-none"
+            >
+              تحديد الكل كمقروء
+            </button>
+          </div>
+
+          <div class="max-h-64 overflow-y-auto flex flex-col gap-1">
+            <div
+              *ngIf="notifications.length === 0"
+              class="py-4 text-center text-xs text-surface-400"
+            >
+              لا توجد تنبيهات جديدة
+            </div>
+
+            <div
+              *ngFor="let notification of notifications"
+              [class.bg-blue-50]="!notification.read"
+              class="p-2.5! rounded-lg! bg-slate-50 border-surface-50 flex flex-col gap-1 hover:bg-surface-50 transition-colors cursor-pointer"
+              (click)="onNotificationClick(notification)"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-surface-800">{{ notification.title }}</span>
+                <span class="text-[9px] text-surface-400">{{
+                  formatNotificationTime(notification.createdAt)
+                }}</span>
+              </div>
+              <span class="text-xs text-surface-600 line-clamp-2 leading-relaxed">{{
+                notification.message
+              }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- User Menu -->
-      <div class="flex items-center gap-3 border-r border-surface-200 dark:border-surface-800 pr-6">
-        <div class="flex flex-col text-right">
-          <span class="text-sm font-semibold text-surface-800 dark:text-surface-100">{{
-            authService.user()?.name
-          }}</span>
-          <span class="text-[10px] text-surface-500 font-medium">{{
-            authService.user()?.role?.name || 'مدير النظام'
-          }}</span>
-        </div>
+      <div
+        class="relative flex items-center gap-3 border-r border-surface-200 dark:border-surface-800 pr-6!"
+      >
         <div
-          class="w-9 h-9 rounded-full bg-(--k-primary-opc-100) flex items-center justify-center text-(--k-primary) font-bold text-sm select-none"
+          class="flex items-center gap-3 cursor-pointer select-none"
+          (click)="toggleUserDropdown($event); $event.stopPropagation()"
         >
-          {{ authService.user()?.name?.substring(0, 2) || 'أد' }}
+          <div class="flex flex-col text-right">
+            <span class="text-sm font-semibold text-surface-800 dark:text-surface-100">{{
+              authService.user()?.name
+            }}</span>
+            <span class="text-[10px] text-surface-500 font-medium">{{
+              authService.user()?.roleId | role
+            }}</span>
+          </div>
+          <div
+            class="w-9 h-9 rounded-full bg-(--k-primary-opc-100) flex items-center justify-center text-(--k-primary) font-bold text-sm select-none"
+          >
+            {{ authService.user()?.name?.substring(0, 2) || 'أد' }}
+          </div>
         </div>
 
         <!-- Log Out Shortcut Icon -->
@@ -68,17 +122,100 @@
         >
           <i class="pi pi-sign-out text-lg"></i>
         </button>
+
+        <!-- Dropdown Menu -->
+        <div
+          *ngIf="isUserDropdownOpen"
+          class="absolute left-0 top-12 z-50 w-56 rounded-lg border border-gray-200 bg-white p-2! shadow-lg flex flex-col gap-1 transition-all"
+          (click)="$event.stopPropagation()"
+        >
+          <button
+            (click)="openChangePasswordDialog()"
+            class="w-full text-right flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800/50 rounded-lg cursor-pointer transition-colors"
+          >
+            <i class="pi pi-key text-surface-500"></i>
+            <span>تغيير كلمة المرور</span>
+          </button>
+          <div class="h-[1px] bg-surface-100 dark:bg-surface-800 my-1"></div>
+          <button
+            (click)="logout()"
+            class="w-full text-right flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg cursor-pointer transition-colors"
+          >
+            <i class="pi pi-sign-out text-surface-500"></i>
+            <span>تسجيل الخروج</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
-  <aside class="sidebar">
-    <app-side-bar></app-side-bar>
+  <p-toast position="bottom-right"></p-toast>
+
+  <p-dialog
+    header="تغيير كلمة المرور"
+    [(visible)]="isPasswordDialogOpen"
+    [modal]="true"
+    [style]="{ width: '450px' }"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <div class="flex flex-col gap-4 py-4" style="direction: rtl">
+      <div class="flex flex-col gap-2">
+        <label for="layoutPassword" class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+          >كلمة المرور الجديدة</label
+        >
+        <input
+          id="layoutPassword"
+          type="password"
+          pInputText
+          class="w-full h-11!"
+          [(ngModel)]="passwordForm.password"
+          placeholder="********"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label
+          for="layoutConfirmPassword"
+          class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+          >تأكيد كلمة المرور الجديدة</label
+        >
+        <input
+          id="layoutConfirmPassword"
+          type="password"
+          pInputText
+          class="w-full h-11!"
+          [(ngModel)]="passwordForm.confirmPassword"
+          placeholder="********"
+        />
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2" style="direction: rtl">
+        <button
+          pButton
+          label="إلغاء"
+          class="p-button-text h-11!"
+          (click)="isPasswordDialogOpen = false"
+        ></button>
+        <button
+          pButton
+          label="تحديث كلمة المرور"
+          icon="pi pi-check"
+          class="p-button-warning h-11! px-4!"
+          [loading]="isSavingPassword"
+          (click)="submitPasswordChange()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <aside class="sidebar" [class.sidebar-minimized]="isSidebarMinimized">
+    <app-side-bar [(isMinimized)]="isSidebarMinimized"></app-side-bar>
   </aside>
 
   <main class="content">
     <router-outlet></router-outlet>
   </main>
 
-  <footer class="footer">© 2026 منصة إدارة التجهيزات الطبية الوطنية</footer>
+  <footer class="footer">© 2026منصة الهيئة العامة للمعدات والمستلزمات والأجهزة الطبية</footer>
 </div>

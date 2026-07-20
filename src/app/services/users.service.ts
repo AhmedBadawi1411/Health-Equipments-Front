@@ -7,29 +7,28 @@ import { IUser, IUserForm, IRole, IPermission } from '../interfaces/User.interfa
 
 @Injectable({ providedIn: 'root' })
 export class UsersService {
-
   // ── Signals ────────────────────────────────────────────────────────────────
-  private usersSignal      = signal<IUser[]>([]);
-  private rolesSignal      = signal<IRole[]>([]);
-  private permissionsSignal= signal<IPermission[]>([]);
-  private loadingSignal    = signal(false);
+  private usersSignal = signal<IUser[]>([]);
+  private rolesSignal = signal<IRole[]>([]);
+  private permissionsSignal = signal<IPermission[]>([]);
+  private loadingSignal = signal(false);
 
-  users       = this.usersSignal.asReadonly();
-  roles       = this.rolesSignal.asReadonly();
+  users = this.usersSignal.asReadonly();
+  roles = this.rolesSignal.asReadonly();
   permissions = this.permissionsSignal.asReadonly();
-  loading     = this.loadingSignal.asReadonly();
+  loading = this.loadingSignal.asReadonly();
 
   /** Map: userId → IUser (for quick lookup) */
   usersMap = computed(() => {
     const m = new Map<string, IUser>();
-    this.usersSignal().forEach(u => m.set(u.id, u));
+    this.usersSignal().forEach((u) => m.set(u.id, u));
     return m;
   });
 
   /** Permissions grouped by module */
   permissionsByModule = computed(() => {
     const map = new Map<string, IPermission[]>();
-    this.permissionsSignal().forEach(p => {
+    this.permissionsSignal().forEach((p) => {
       const list = map.get(p.module) ?? [];
       list.push(p);
       map.set(p.module, list);
@@ -46,24 +45,25 @@ export class UsersService {
   // ── Load ───────────────────────────────────────────────────────────────────
   loadUsers(): void {
     this.loadingSignal.set(true);
-    this.http.get<ApiResponse<IUser[]>>(this.url(EndPoints.USERS.GET))
-      .subscribe({
-        next: res => {
-          this.usersSignal.set(res.data ?? []);
-          this.loadingSignal.set(false);
-        },
-        error: () => this.loadingSignal.set(false),
-      });
+    this.http.get<ApiResponse<IUser[]>>(this.url(EndPoints.USERS.GET)).subscribe({
+      next: (res) => {
+        this.usersSignal.set(res.data ?? []);
+        this.loadingSignal.set(false);
+      },
+      error: () => this.loadingSignal.set(false),
+    });
   }
 
   loadRoles(): void {
-    this.http.get<ApiResponse<IRole[]>>(this.url(EndPoints.USERS.ROLES))
-      .subscribe(res => this.rolesSignal.set(res.data ?? []));
+    this.http
+      .get<ApiResponse<IRole[]>>(this.url(EndPoints.USERS.ROLES))
+      .subscribe((res) => this.rolesSignal.set(res.data ?? []));
   }
 
   loadPermissions(): void {
-    this.http.get<ApiResponse<IPermission[]>>(this.url(EndPoints.USERS.PERMISSIONS))
-      .subscribe(res => this.permissionsSignal.set(res.data ?? []));
+    this.http
+      .get<ApiResponse<IPermission[]>>(this.url(EndPoints.USERS.PERMISSIONS))
+      .subscribe((res) => this.permissionsSignal.set(res.data ?? []));
   }
 
   getUser(id: string): Observable<ApiResponse<IUser>> {
@@ -85,23 +85,33 @@ export class UsersService {
 
   // ── Role & Permissions ─────────────────────────────────────────────────────
   assignRole(userId: string, roleId: string): Observable<ApiResponse<IUser>> {
-    return this.http.patch<ApiResponse<IUser>>(
-      this.url(EndPoints.USERS.ASSIGN_ROLE(userId)),
-      { roleId }
-    );
+    return this.http.patch<ApiResponse<IUser>>(this.url(EndPoints.USERS.ASSIGN_ROLE(userId)), {
+      roleId,
+    });
   }
 
   assignPermissions(userId: string, permissionIds: string[]): Observable<ApiResponse<IUser>> {
     return this.http.patch<ApiResponse<IUser>>(
       this.url(EndPoints.USERS.ASSIGN_PERMISSIONS(userId)),
-      { permissionIds }
+      { permissionIds },
+    );
+  }
+
+  loadSimpleFacilities(): Observable<ApiResponse<any[]>> {
+    return this.http.get<ApiResponse<any[]>>(this.url(EndPoints.SIMPLE_SYSTEM.FACILITIES));
+  }
+
+  assignSimpleFacilities(userId: string, facilityIds: number[]): Observable<ApiResponse<IUser>> {
+    return this.http.patch<ApiResponse<IUser>>(
+      this.url(EndPoints.USERS.ASSIGN_SIMPLE_FACILITIES(userId)),
+      { facilityIds },
     );
   }
 
   assignFacilities(userId: string, facilityIds: number[]): Observable<ApiResponse<IUser>> {
     return this.http.patch<ApiResponse<IUser>>(
       this.url(EndPoints.USERS.ASSIGN_FACILITIES(userId)),
-      { facilityIds }
+      { facilityIds },
     );
   }
 }

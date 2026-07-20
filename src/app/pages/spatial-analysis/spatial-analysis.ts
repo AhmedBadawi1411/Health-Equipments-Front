@@ -4,9 +4,7 @@ import * as turf from '@turf/turf';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Select } from 'primeng/select';
-import { FacilitiesSerive } from '../../services/facilities';
-import { AssetsService } from '../../services/assets';
-import { IFacility } from '../../interfaces/Facilities.Interface';
+import { HealthcareService, Facility, Inventory } from '../../services/healthcare.service';
 import { HttpClient } from '@angular/common/http';
 
 // ─────────────────────────────────────────────
@@ -18,22 +16,19 @@ type ColorMode = 'status' | 'type' | 'region';
 
 // ──────────────── colour constants ───────────────────────────────────────────
 const STATUS_COLORS: Record<string, { color: string; label: string; border: string }> = {
-  NOT_STARTED: { color: '#ef4444', label: 'لم يبدأ الجرد', border: '#dc2626' },
-  IN_PROGRESS: { color: '#f59e0b', label: 'جرد جاري', border: '#d97706' },
-  SUBMITTED: { color: '#3b82f6', label: 'جرد مقدم', border: '#2563eb' },
-  APPROVED: { color: '#10b981', label: 'جرد مكتمل', border: '#059669' },
-  REJECTED: { color: '#8b5cf6', label: 'جرد مرفوض', border: '#7c3aed' },
+  NOT_STARTED: { color: '#ef4444', label: 'لم يبدأ بعد', border: '#dc2626' },
+  PENDING_APPROVAL: { color: '#f59e0b', label: 'بانتظار الاستلام', border: '#d97706' },
+  APPROVED: { color: '#10b981', label: 'تمت الموافقة', border: '#059669' },
 };
 
 const TYPE_COLORS: Record<string, { color: string; border: string }> = {
-  Hospital: { color: '#e11d48', border: '#be123c' },
-  مستشفى: { color: '#e11d48', border: '#be123c' },
+  'مشفي': { color: '#e11d48', border: '#be123c' },
+  'Hospital': { color: '#e11d48', border: '#be123c' },
+  'مركز صحي / عيادة مجمعة': { color: '#0891b2', border: '#0e7490' },
   'Health Center': { color: '#0891b2', border: '#0e7490' },
-  'مركز صحي': { color: '#0891b2', border: '#0e7490' },
-  Clinic: { color: '#7c3aed', border: '#6d28d9' },
-  عيادة: { color: '#7c3aed', border: '#6d28d9' },
-  Polyclinic: { color: '#ea580c', border: '#c2410c' },
-  'عيادة متعددة': { color: '#ea580c', border: '#c2410c' },
+  'مكتب خدمات صحية': { color: '#7c3aed', border: '#6d28d9' },
+  'Clinic': { color: '#7c3aed', border: '#6d28d9' },
+  'Dispensary': { color: '#ea580c', border: '#c2410c' },
 };
 
 const REGION_PALETTE = [
@@ -74,12 +69,12 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
   private nearestLayers: L.LayerGroup = L.layerGroup();
   private centroidLayer: L.LayerGroup = L.layerGroup();
 
-  private regionColorMap = new Map<number, string>();
+  private regionColorMap = new Map<string, string>();
 
   // ─── ui state ──────────────────────────────────────────────────────────────
   colorMode = signal<ColorMode>('status');
 
-  selectedRegionFilter: number | null = null;
+  selectedRegionFilter: string | null = null;
   selectedTypeFilter: string | null = null;
   selectedStatusFilter: string | null = null;
 
@@ -101,31 +96,38 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
   // ─── dropdown data ─────────────────────────────────────────────────────────
   colorModeOptions = [
-    { label: 'حسب حالة الجرد', value: 'status' },
-    { label: 'حسب نوع الجهة', value: 'type' },
+    { label: 'حسب حالة الحصر', value: 'status' },
+    { label: 'حسب نوع المرفق', value: 'type' },
     { label: 'حسب المنطقة', value: 'region' },
   ];
 
   statusOptions = [
     { label: 'الكل', value: null },
-    { label: 'لم يبدأ الجرد', value: 'NOT_STARTED' },
-    { label: 'جرد جاري', value: 'IN_PROGRESS' },
-    { label: 'جرد مقدم', value: 'SUBMITTED' },
-    { label: 'جرد مكتمل', value: 'APPROVED' },
-    { label: 'جرد مرفوض', value: 'REJECTED' },
+    { label: 'لم يبدأ بعد', value: 'NOT_STARTED' },
+    { label: 'بانتظار الاستلام', value: 'PENDING_APPROVAL' },
+    { label: 'تمت الموافقة', value: 'APPROVED' },
   ];
 
+  facilities = signal<Facility[]>([]);
+  simpleInventories = signal<Inventory[]>([]);
+
   constructor(
-    public readonly facilitiesService: FacilitiesSerive,
-    public readonly assetsService: AssetsService,
+    public readonly healthcareService: HealthcareService,
     private readonly http: HttpClient,
   ) {}
 
   // ─── lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit(): void {
-    this.facilitiesService.loadFacilities(true);
-    this.facilitiesService.loadRegions();
-    this.assetsService.loadAssets();
+    this.healthcareService.getFacilities().subscribe(res => {
+      if (res.success && res.data) {
+        this.facilities.set(res.data);
+      }
+    });
+    this.healthcareService.getInventory().subscribe(res => {
+      if (res.success && res.data) {
+        this.simpleInventories.set(res.data);
+      }
+    });
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -137,7 +139,7 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
     // 3. Init map after plugins are registered
     this.initMap();
     const iv = setInterval(() => {
-      if (this.facilitiesService.facilities().length > 0) {
+      if (this.facilities().length > 0) {
         this.renderMarkers();
         clearInterval(iv);
       }
@@ -172,20 +174,20 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ─── colour helpers ────────────────────────────────────────────────────────
-  private getFacilityColor(f: IFacility): { color: string; border: string } {
+  private getFacilityColor(f: Facility): { color: string; border: string } {
     const mode = this.colorMode();
     if (mode === 'status') {
       const s = STATUS_COLORS[f.inventoryStatus];
       return s ?? { color: '#6b7280', border: '#4b5563' };
     }
     if (mode === 'type') {
-      return TYPE_COLORS[f.facilityType] ?? { color: '#6b7280', border: '#4b5563' };
+      return TYPE_COLORS[f.facilityLevel] ?? { color: '#6b7280', border: '#4b5563' };
     }
-    if (!this.regionColorMap.has(f.regionID)) {
+    if (!this.regionColorMap.has(f.region)) {
       const idx = this.regionColorMap.size % REGION_PALETTE.length;
-      this.regionColorMap.set(f.regionID, REGION_PALETTE[idx]);
+      this.regionColorMap.set(f.region, REGION_PALETTE[idx]);
     }
-    const c = this.regionColorMap.get(f.regionID)!;
+    const c = this.regionColorMap.get(f.region)!;
     return { color: c, border: c };
   }
 
@@ -206,12 +208,12 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ─── filtered facilities ───────────────────────────────────────────────────
-  private getFilteredFacilities(): IFacility[] {
-    let list = this.facilitiesService.facilities().filter((f) => f.lat && f.lng);
+  private getFilteredFacilities(): Facility[] {
+    let list = this.facilities().filter((f) => f.lat && f.lng);
     if (this.selectedRegionFilter)
-      list = list.filter((f) => f.regionID === this.selectedRegionFilter);
+      list = list.filter((f) => f.region === this.selectedRegionFilter);
     if (this.selectedTypeFilter)
-      list = list.filter((f) => f.facilityType === this.selectedTypeFilter);
+      list = list.filter((f) => f.facilityLevel === this.selectedTypeFilter);
     if (this.selectedStatusFilter)
       list = list.filter((f) => f.inventoryStatus === this.selectedStatusFilter);
     return list;
@@ -219,8 +221,10 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
   private assetCountMap(): Map<number, number> {
     const m = new Map<number, number>();
-    for (const a of this.assetsService.assets()) {
-      m.set(a.facilityId, (m.get(a.facilityId) ?? 0) + 1);
+    for (const inv of this.simpleInventories()) {
+      const fid = inv.facilityId;
+      const count = inv.items?.length ?? 0;
+      m.set(fid, (m.get(fid) ?? 0) + count);
     }
     return m;
   }
@@ -234,19 +238,19 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
     for (const f of facilities) {
       const { color, border } = this.getFacilityColor(f);
-      const assetCount = assetCounts.get(f.facilityID) ?? 0;
+      const assetCount = assetCounts.get(f.id) ?? 0;
       const icon = this.createMarkerIcon(color, border, assetCount);
-      const regionName = this.facilitiesService.regionsMap().get(f.regionID) ?? '-';
+      const regionName = f.region || '-';
       const statusInfo = STATUS_COLORS[f.inventoryStatus];
 
       const popup = `
         <div style="rtl! font-family:'Cairo',sans-serif;direction:rtl;min-width:220px;padding:4px;">
           <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:6px;">${f.facilityName}</div>
           <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#475569;">
-            <div><b>النوع:</b> ${f.facilityType}</div>
+            <div><b>النوع:</b> ${f.facilityLevel}</div>
             <div><b>المنطقة:</b> ${regionName}</div>
-            <div><b>العنوان:</b> ${f.address || '-'}</div>
-            <div><b>السعة السريرية:</b> ${f.capacity} سرير</div>
+            <div><b>العنوان:</b> ${f.director || '-'}</div>
+            <div><b>السعة السريرية:</b> ${f.bedCapacity} سرير</div>
             <div><b>الأصول الطبية:</b> ${assetCount} جهاز</div>
             <div style="margin-top:4px;">
               <span style="background:${statusInfo?.color ?? '#6b7280'};color:#fff;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;">
@@ -256,7 +260,7 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
           </div>
         </div>`;
 
-      L.marker([f.lat, f.lng], { icon })
+      L.marker([f.lat!, f.lng!], { icon })
         .bindPopup(popup, { maxWidth: 280 })
         .addTo(this.markerLayers);
     }
@@ -284,14 +288,14 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
     const facilities = this.getFilteredFacilities();
     const assetCounts = this.assetCountMap();
-    const maxAssets = Math.max(...facilities.map((f) => assetCounts.get(f.facilityID) ?? 0), 1);
+    const maxAssets = Math.max(...facilities.map((f) => assetCounts.get(f.id) ?? 0), 1);
 
     const points = facilities.map(
       (f) =>
         [
-          f.lat,
-          f.lng,
-          (assetCounts.get(f.facilityID) ?? 0) / maxAssets, // normalised intensity 0-1
+          f.lat!,
+          f.lng!,
+          (assetCounts.get(f.id) ?? 0) / maxAssets, // normalised intensity 0-1
         ] as [number, number, number],
     );
 
@@ -379,9 +383,9 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
     for (const f of facilities) {
       const { color, border } = this.getFacilityColor(f);
-      const assetCount = assetCounts.get(f.facilityID) ?? 0;
+      const assetCount = assetCounts.get(f.id) ?? 0;
       const icon = this.createMarkerIcon(color, border, assetCount);
-      const marker = L.marker([f.lat, f.lng], { icon, _fid: f.facilityID } as any);
+      const marker = L.marker([f.lat!, f.lng!], { icon, _fid: f.id } as any);
       marker.bindPopup(f.facilityName);
       this.clusterGroup.addLayer(marker);
     }
@@ -403,11 +407,11 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
     const assetCounts = this.assetCountMap();
 
     for (const f of facilities) {
-      const assetCount = assetCounts.get(f.facilityID) ?? 0;
+      const assetCount = assetCounts.get(f.id) ?? 0;
       const radius = this.bufferRadiusKm;
       const { color } = this.getFacilityColor(f);
 
-      const circle = turf.circle([f.lng, f.lat], radius, {
+      const circle = turf.circle([f.lng!, f.lat!], radius, {
         steps: 64,
         units: 'kilometers',
       });
@@ -459,10 +463,10 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
         const points = turf.featureCollection(
           facilities.map((f) =>
-            turf.point([f.lng, f.lat], {
+            turf.point([f.lng!, f.lat!], {
               status: f.inventoryStatus,
               name: f.facilityName,
-              fid: f.facilityID,
+              fid: f.id,
             }),
           ),
         );
@@ -498,8 +502,8 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
               .bindTooltip(
                 `<div style="font-family:'Alexandria', sans-serif; direction:rtl; text-align:right; font-size:12px; padding:4px; line-height: 1.6;">
                 <b style="font-size:13px; color:#1e293b;">نطاق مسؤولية جغرافية:</b><br>
-                <b>الجهة:</b> ${props.facilityName}<br>
-                <b>حالة الجرد:</b> <span style="color:${color}; font-weight:bold;">${statusInfo?.label ?? props.inventoryStatus}</span><br>
+                <b>المرفق:</b> ${props.facilityName}<br>
+                <b>حالة الحصر:</b> <span style="color:${color}; font-weight:bold;">${statusInfo?.label ?? props.inventoryStatus}</span><br>
                 <hr style="margin: 4px 0; border: 0; border-top: 1px solid #e2e8f0;">
                 <b>المساحة المغطاة:</b> <span style="color:#2563eb; font-weight:bold;">${Math.round(areaInSquareKm).toLocaleString()}</span> كم²
               </div>`,
@@ -528,18 +532,18 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
     const points = turf.featureCollection(
       facilities.map((f) =>
-        turf.point([f.lng, f.lat], { name: f.facilityName, fid: f.facilityID }),
+        turf.point([f.lng!, f.lat!], { name: f.facilityName, fid: f.id }),
       ),
     );
 
     facilities.forEach((f, idx) => {
       // Build a collection excluding self
       const others = turf.featureCollection(points.features.filter((_, i) => i !== idx));
-      const nearest = turf.nearestPoint(turf.point([f.lng, f.lat]), others);
-      const dist = turf.distance(turf.point([f.lng, f.lat]), nearest, { units: 'kilometers' });
+      const nearest = turf.nearestPoint(turf.point([f.lng!, f.lat!]), others);
+      const dist = turf.distance(turf.point([f.lng!, f.lat!]), nearest, { units: 'kilometers' });
 
       const line = turf.lineString([
-        [f.lng, f.lat],
+        [f.lng!, f.lat!],
         nearest.geometry.coordinates as [number, number],
       ]);
 
@@ -575,23 +579,26 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
     const facilities = this.getFilteredFacilities();
 
-    // Group by region
-    const byRegion = new Map<number, IFacility[]>();
+    // Group by region string
+    const byRegion = new Map<string, Facility[]>();
     for (const f of facilities) {
-      if (!byRegion.has(f.regionID)) byRegion.set(f.regionID, []);
-      byRegion.get(f.regionID)!.push(f);
+      if (!byRegion.has(f.region)) byRegion.set(f.region, []);
+      byRegion.get(f.region)!.push(f);
     }
 
-    byRegion.forEach((facs, regionId) => {
+    byRegion.forEach((facs, regionName) => {
       if (facs.length === 0) return;
-      const regionName = this.facilitiesService.regionsMap().get(regionId) ?? `منطقة ${regionId}`;
 
-      const fc = turf.featureCollection(facs.map((f) => turf.point([f.lng, f.lat])));
+      const fc = turf.featureCollection(facs.map((f) => turf.point([f.lng!, f.lat!])));
       const ctr = turf.centroid(fc);
       const [lng, lat] = ctr.geometry.coordinates;
 
       // Star-shaped centroid marker
-      const color = REGION_PALETTE[regionId % REGION_PALETTE.length];
+      if (!this.regionColorMap.has(regionName)) {
+        const idx = this.regionColorMap.size % REGION_PALETTE.length;
+        this.regionColorMap.set(regionName, REGION_PALETTE[idx]);
+      }
+      const color = this.regionColorMap.get(regionName)!;
       const icon = L.divIcon({
         className: '',
         html: `<div style="
@@ -670,9 +677,9 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
 
   // ─── quick stats for analytics sidebar ────────────────────────────────────
   get avgAssetsPerFacility(): number {
-    const facs = this.facilitiesService.facilities();
+    const facs = this.facilities();
     if (!facs.length) return 0;
-    const total = this.assetsService.assets().length;
+    const total = this.simpleInventories().reduce((sum, inv) => sum + (inv.items?.length ?? 0), 0);
     return Math.round(total / facs.length);
   }
 
@@ -681,11 +688,11 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
     if (facilities.length < 2) return '-';
     let maxDist = 0;
     let name = '-';
-    const pts = turf.featureCollection(facilities.map((f) => turf.point([f.lng, f.lat])));
+    const pts = turf.featureCollection(facilities.map((f) => turf.point([f.lng!, f.lat!])));
     facilities.forEach((f, i) => {
       const others = turf.featureCollection(pts.features.filter((_, j) => j !== i));
-      const nearest = turf.nearestPoint(turf.point([f.lng, f.lat]), others);
-      const d = turf.distance(turf.point([f.lng, f.lat]), nearest, { units: 'kilometers' });
+      const nearest = turf.nearestPoint(turf.point([f.lng!, f.lat!]), others);
+      const d = turf.distance(turf.point([f.lng!, f.lat!]), nearest, { units: 'kilometers' });
       if (d > maxDist) {
         maxDist = d;
         name = f.facilityName;
@@ -697,37 +704,35 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
   get facilitiesWithoutCoverage(): number {
     // Facilities with 0 assets = no coverage
     const counts = this.assetCountMap();
-    return this.getFilteredFacilities().filter((f) => (counts.get(f.facilityID) ?? 0) === 0).length;
+    return this.getFilteredFacilities().filter((f) => (counts.get(f.id) ?? 0) === 0).length;
   }
 
   // ─── existing stats ─────────────────────────────────────────────────────────
   get totalFacilities() {
-    return this.facilitiesService.facilities().length;
+    return this.facilities().length;
   }
   get facilitiesWithCoords() {
-    return this.facilitiesService.facilities().filter((f) => f.lat && f.lng).length;
+    return this.facilities().filter((f) => f.lat && f.lng).length;
   }
   get approvedCount() {
-    return this.facilitiesService.facilities().filter((f) => f.inventoryStatus === 'APPROVED')
-      .length;
+    return this.facilities().filter((f) => f.inventoryStatus === 'APPROVED').length;
   }
   get inProgressCount() {
-    return this.facilitiesService.facilities().filter((f) => f.inventoryStatus === 'IN_PROGRESS')
-      .length;
+    return this.facilities().filter((f) => f.inventoryStatus === 'PENDING_APPROVAL').length;
   }
   get notStartedCount() {
-    return this.facilitiesService.facilities().filter((f) => f.inventoryStatus === 'NOT_STARTED')
-      .length;
+    return this.facilities().filter((f) => f.inventoryStatus === 'NOT_STARTED').length;
   }
 
   get facilityTypeOptions() {
-    const types = [...new Set(this.facilitiesService.facilities().map((f) => f.facilityType))];
+    const types = [...new Set(this.facilities().map((f) => f.facilityLevel).filter(Boolean))];
     return [{ label: 'الكل', value: null }, ...types.map((t) => ({ label: t, value: t }))];
   }
   get regionOptions() {
+    const uniqueRegions = Array.from(new Set(this.facilities().map(f => f.region).filter(Boolean)));
     return [
       { label: 'الكل', value: null },
-      ...this.facilitiesService.regions().map((r) => ({ label: r.regionName, value: r.regionID })),
+      ...uniqueRegions.map(r => ({ label: r, value: r }))
     ];
   }
 
@@ -739,8 +744,8 @@ export class SpatialAnalysis implements OnInit, AfterViewInit, OnDestroy {
   }
 
   fitBounds(): void {
-    const facs = this.facilitiesService.facilities().filter((f) => f.lat && f.lng);
+    const facs = this.facilities().filter((f) => f.lat && f.lng);
     if (!facs.length || !this.map) return;
-    this.map.fitBounds(L.latLngBounds(facs.map((f) => [f.lat, f.lng])), { padding: [40, 40] });
+    this.map.fitBounds(L.latLngBounds(facs.map((f) => [f.lat!, f.lng!])), { padding: [40, 40] });
   }
 }

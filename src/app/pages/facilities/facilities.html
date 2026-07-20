@@ -1,82 +1,134 @@
+<p-confirmDialog [style]="{ width: '400px' }" acceptLabel="نعم" rejectLabel="لا"></p-confirmDialog>
 <p-toast position="bottom-right"></p-toast>
 <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body"></p-menu>
 
 <div class="assets-layout">
   <div class="header">
     <app-section-header
+      [showAddButton]="authService.hasPermission('facility:create')"
       (onAddClickedEvent)="onAdd()"
-      sectionTitle="إدارة الجهات الصحية"
-      actionLabel="إضافة منشأة جديدة"
+      sectionTitle="إدارة المرافق الصحية"
+      actionLabel="إضافة مرفق جديد"
     ></app-section-header>
   </div>
-  
-  <div class="filters-wrapper flex flex-row gap-4 items-end">
-    <app-text-box-with-label [(value)]="searchText"></app-text-box-with-label>
-    <app-select-with-label [(selectedItem)]="selectedType" [optionsList]="typeOptions" label="نوع الجهة" placeholder="اختر النوع"></app-select-with-label>
-    <app-select-with-label [(selectedItem)]="selectedStatus" [optionsList]="statusOptions" label="حالة الجرد" placeholder="اختر الحالة"></app-select-with-label>
-    <app-select-with-label [(selectedItem)]="selectedRegion" [optionsList]="regionOptions()" label="المنطقة" placeholder="اختر المنطقة"></app-select-with-label>
-    
+
+  <div class="filters-wrapper flex flex-row gap-4 items-end mb-4! card-shadow">
+    <app-text-box-with-label
+      [(value)]="searchText"
+      label="بحث باسم المرفق أو المدير"
+      placeholder="إسم المرفق او المدير"
+    ></app-text-box-with-label>
+    <app-select-with-label
+      [(selectedItem)]="selectedType"
+      [optionsList]="typeOptions"
+      label="مستوى المرفق"
+      placeholder="اختر المستوى"
+    ></app-select-with-label>
+    <app-select-with-label
+      [(selectedItem)]="selectedStatus"
+      [optionsList]="statusOptions"
+      label="حالة الحصر"
+      placeholder="اختر الحالة"
+    ></app-select-with-label>
+    <app-select-with-label
+      [(selectedItem)]="selectedHealthZone"
+      [optionsList]="healthZoneOptions"
+      [filter]="true"
+      filterBy="name"
+      label="المنطقة الصحية"
+      placeholder="اختر المنطقة الصحية"
+    ></app-select-with-label>
+    <app-select-with-label
+      [(selectedItem)]="selectedRegion"
+      [optionsList]="regionOptions"
+      [filter]="true"
+      filterBy="name"
+      label="البلدية"
+      placeholder="اختر البلدية"
+    ></app-select-with-label>
+
     <div class="pb-1!">
-      <p-button 
-        icon="pi pi-refresh" 
-        label="إعادة ضبط" 
-        severity="secondary" 
-        (click)="resetFilters()" 
-        class="h-10!"
-      />
+      <p-button icon="pi pi-refresh" severity="secondary" (click)="resetFilters()" class="h-10!" />
     </div>
   </div>
 
-  <div class="card">
+  <div class="card-shadow card">
     <p-table
       [value]="filteredFacilities()"
       [tableStyle]="{ 'min-width': '50rem' }"
       [paginator]="true"
       [rows]="15"
       [rowsPerPageOptions]="[10, 15, 30]"
-      #facilities
+      #facilitiesTable
       [columns]="cols"
     >
       <ng-template #caption>
-        <div class="text-end pb-4">
-          <p-button icon="pi pi-external-link" label="تصدير" (click)="facilities.exportCSV()" />
+        <div class="flex flex-row justify-between items-center pb-4">
+          <span class="font-bold text-slate-700">جدول المرافق الصحية</span>
+          <div class="flex gap-2">
+            <p-button
+              *ngIf="authService.hasPermission('gis:analysis')"
+              icon="pi pi-map"
+              label="التحليل الجغرافي (GIS)"
+              severity="info"
+              [routerLink]="['/map']"
+            />
+            <p-button
+              icon="pi pi-file-excel"
+              label="تصدير إلى Excel"
+              severity="success"
+              (click)="exportExcel()"
+            />
+          </div>
         </div>
       </ng-template>
       <ng-template #header>
         <tr>
-          <th>الرقم التعريفي</th>
-          <th>المنطقة</th>
+          <th>ت</th>
+          <th>المنطقة الصحية</th>
+          <th>البلدية</th>
           <th>الاسم</th>
-          <th>النوع</th>
-          <th>العنوان</th>
-          <th>المستوي</th>
+          <th>النوع / المستوى</th>
+          <!-- <th>المدير المسؤول</th> -->
           <th>السعة</th>
-          <th>حالة الجرد</th>
+          <th>حالة الحصر</th>
           <th class="w-24 text-center">الاجراءات</th>
         </tr>
       </ng-template>
       <ng-template #body let-item>
         <tr>
-          <td>{{ item.facilityID }}</td>
-          <td>{{ facilitiesService.regionsMap().get(item.regionID) }}</td>
-          <td>{{ item.facilityName }}</td>
-          <td>{{ item.facilityType }}</td>
-          <td>{{ item.address ?? 'لا يوجد' }}</td>
-          <td>{{ item.facilityLevel }}</td>
-          <td>{{ item.capacity }}</td>
+          <td class="text-slate-400!">{{ item.id }}</td>
+          <td>{{ item.healthZone }}</td>
+          <td>{{ item.region }}</td>
           <td>
-            <p-tag
-              [value]="(item.inventoryStatus | InventoryStatus).label"
-              [severity]="(item.inventoryStatus | InventoryStatus).severity"
-            />
+            <div class="flex flex-col gap-1">
+              <p class="text-slate-600 font-semibold">{{ item.facilityName }}</p>
+              <p class="text-slate-400">{{ item.director }}</p>
+            </div>
+          </td>
+          <td>{{ item.facilityLevel }}</td>
+          <!-- <td>{{ item.director }}</td> -->
+          <td>{{ item.bedCapacity }} سرير</td>
+          <td>
+            <p-tag [severity]="getSeverity(item.inventoryStatus)">
+              {{
+                item.inventoryStatus === 'NOT_STARTED'
+                  ? 'لم يبدأ الحصر'
+                  : item.inventoryStatus === 'PENDING_APPROVAL'
+                    ? 'بانتظار الاستلام'
+                    : item.inventoryStatus === 'APPROVED'
+                      ? 'حصر مُستلم'
+                      : 'مرفوض للتعديل'
+              }}
+            </p-tag>
           </td>
           <td>
             <div class="flex flex-row justify-center">
-              <p-button 
-                icon="pi pi-ellipsis-v" 
-                (click)="activeItem = item; menu.toggle($event)" 
-                severity="secondary" 
-                rounded 
+              <p-button
+                icon="pi pi-ellipsis-v"
+                (click)="activeItem = item; menu.toggle($event)"
+                severity="secondary"
+                rounded
               />
             </div>
           </td>
@@ -85,3 +137,394 @@
     </p-table>
   </div>
 </div>
+
+<!-- Edit / Create Facility Modal -->
+<div
+  *ngIf="isFacilityModalOpen"
+  class="modal-overlay"
+  style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  "
+>
+  <div
+    class="modal-card w-3xl!"
+    style="
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      width: 550px;
+      max-width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    "
+  >
+    <div
+      class="modal-header"
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+      "
+    >
+      <h2 style="font-size: 20px; font-weight: bold">
+        {{ isEditing ? 'تعديل بيانات المرفق الصحي' : 'إضافة جهة صحية جديدة' }}
+      </h2>
+      <button
+        (click)="closeFacilityModal()"
+        class="close-btn"
+        style="font-size: 24px; border: none; background: none; cursor: pointer"
+      >
+        &times;
+      </button>
+    </div>
+
+    <form (submit)="saveFacilityEdits(); $event.preventDefault()" class="simple-form">
+      <div class="form-group" style="margin-bottom: 12px">
+        <label style="display: block; font-weight: bold; margin-bottom: 6px"
+          >اسم المرفق الصحي *</label
+        >
+        <input
+          type="text"
+          [(ngModel)]="editingFacility.facilityName"
+          name="editFacName"
+          required
+          class="p-inputtext w-full"
+          style="height: 40px; padding: 8px"
+        />
+      </div>
+
+      <div
+        class="form-row-2"
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px"
+      >
+        <div class="form-group">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px"
+            >مستوى الخدمة *</label
+          >
+          <select
+            [(ngModel)]="editingFacility.facilityLevel"
+            name="editFacLevel"
+            required
+            class="p-inputtext w-full"
+            style="height: 40px; padding: 8px"
+          >
+            <option value="مستشفي جامعي">مستشفي جامعي</option>
+            <option value="مركز طبي">مركز طبي</option>
+            <option value="المستشفيات العامة والتخصصية والتعليمية والقروية">
+              المستشفيات العامة والتخصصية والتعليمية والقروية
+            </option>
+            <option value="المراكز التخصصية">المراكز التخصصية</option>
+            <option value="العيادات المجمعة">العيادات المجمعة</option>
+            <option value="مكاتب الخدمات الصحية بالمنطقة">مكاتب الخدمات الصحية بالمنطقة</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px"
+            >المنطقة الصحية *</label
+          >
+          <select
+            [(ngModel)]="editingFacility.healthZone"
+            name="editHealthZone"
+            required
+            class="p-inputtext w-full"
+            style="height: 40px; padding: 8px"
+          >
+            <option value="المنطقة الصحية الغربية">المنطقة الصحية الغربية</option>
+            <option value="المنطقة الصحية الشرقية">المنطقة الصحية الشرقية</option>
+            <option value="المنطقة الصحية الجنوبية">المنطقة الصحية الجنوبية</option>
+            <option value="المنطقة الصحية الوسطى">المنطقة الصحية الوسطى</option>
+            <option value="المنطقة الصحية بطرابلس">المنطقة الصحية بطرابلس</option>
+            <option value="المنطقة الصحية ببنغازي">المنطقة الصحية ببنغازي</option>
+          </select>
+        </div>
+        <div class="form-group col-span-2">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px">البلدية *</label>
+          <input
+            type="text"
+            [(ngModel)]="editingFacility.region"
+            name="editRegion"
+            required
+            class="p-inputtext w-full"
+            style="height: 40px; padding: 8px"
+          />
+        </div>
+      </div>
+
+      <div
+        class="form-row-2"
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px"
+      >
+        <div class="form-group">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px"
+            >السعة السريرية بالسرير *</label
+          >
+          <input
+            type="number"
+            [(ngModel)]="editingFacility.bedCapacity"
+            name="editBeds"
+            min="0"
+            required
+            class="p-inputtext w-full"
+            style="height: 40px; padding: 8px"
+          />
+        </div>
+        <div class="form-group">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px"
+            >المدير المسؤول بالمرفق *</label
+          >
+          <input
+            type="text"
+            [(ngModel)]="editingFacility.director"
+            name="editDirector"
+            required
+            class="p-inputtext w-full"
+            style="height: 40px; padding: 8px"
+          />
+        </div>
+      </div>
+
+      <div
+        class="form-row-2"
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px"
+      >
+        <div class="form-group">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px"
+            >خط العرض (Latitude)</label
+          >
+          <input
+            type="number"
+            step="any"
+            [(ngModel)]="editingFacility.lat"
+            name="editLat"
+            (ngModelChange)="onCoordinatesChanged()"
+            class="p-inputtext w-full"
+            style="height: 40px; padding: 8px"
+          />
+        </div>
+        <div class="form-group">
+          <label style="display: block; font-weight: bold; margin-bottom: 6px"
+            >خط الطول (Longitude)</label
+          >
+          <input
+            type="number"
+            step="any"
+            [(ngModel)]="editingFacility.lng"
+            name="editLng"
+            (ngModelChange)="onCoordinatesChanged()"
+            class="p-inputtext w-full"
+            style="height: 40px; padding: 8px"
+          />
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 24px">
+        <label style="display: block; font-weight: bold; margin-bottom: 6px"
+          >تحديد الموقع على الخريطة</label
+        >
+        <div
+          id="locationPicker"
+          style="height: 250px; width: 100%; border-radius: 4px; border: 1px solid #ccc; z-index: 1"
+        ></div>
+      </div>
+
+      <div
+        class="modal-footer"
+        style="
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          border-top: 1px solid #e5e7eb;
+          padding-top: 12px;
+        "
+      >
+        <p-button label="إلغاء" severity="secondary" (click)="closeFacilityModal()"></p-button>
+        <p-button label="حفظ" type="submit"></p-button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Combined Departments Manager Modal Dialog -->
+<p-dialog
+  [(visible)]="isDeptModalOpen"
+  [modal]="true"
+  [style]="{ width: '45vw' }"
+  header="الأقسام الطبية التابعة للمرفق: {{ activeItem?.facilityName }}"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="flex flex-col gap-4 p-1">
+    <!-- Add new dept form inline -->
+    <div class="flex flex-row gap-2 items-center" style="width: 100%">
+      <p-select
+        [options]="filteredStoredDepartments"
+        optionLabel="arabicName"
+        optionValue="arabicName"
+        [(ngModel)]="newDeptName"
+        placeholder="اختر القسم الطبي لإضافته"
+        class="w-full h-10!"
+        [editable]="true"
+        style="width: 100%"
+      >
+        <ng-template #emptyfilter>
+          <div class="p-2 flex flex-col gap-2 items-center text-center">
+            <span class="text-xs text-slate-500">القسم غير مسجل في قاعدة البيانات</span>
+            <p-button
+              label="إضافة قسم جديد للنظام"
+              icon="pi pi-plus"
+              severity="success"
+              class="w-full"
+              (click)="openAddStoredDeptDialog()"
+            ></p-button>
+          </div>
+        </ng-template>
+        <ng-template #empty>
+          <div class="p-2 flex flex-col gap-2 items-center text-center">
+            <span class="text-xs text-slate-500">لا توجد أقسام مسجلة</span>
+            <p-button
+              label="إضافة قسم جديد للنظام"
+              icon="pi pi-plus"
+              severity="success"
+              class="w-full"
+              (click)="openAddStoredDeptDialog()"
+            ></p-button>
+          </div>
+        </ng-template>
+      </p-select>
+      <p-button
+        label="إضافة"
+        icon="pi pi-plus"
+        (click)="addDept()"
+        [disabled]="!newDeptName || !newDeptName.trim()"
+      ></p-button>
+    </div>
+
+    <!-- Departments list table -->
+    <p-table
+      [value]="departments"
+      [tableStyle]="{ 'min-width': '100%' }"
+      class="mt-2"
+      [paginator]="true"
+      [rows]="8"
+    >
+      <ng-template #header>
+        <tr>
+          <th>اسم القسم الطبي</th>
+          <th class="w-24 text-center">الاجراءات</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-dept let-i="rowIndex">
+        <tr>
+          <td>
+            <span *ngIf="editingDeptIndex !== i" class="font-semibold">{{
+              dept.departmentName
+            }}</span>
+            <input
+              *ngIf="editingDeptIndex === i"
+              type="text"
+              pInputText
+              class="w-full h-9!"
+              [(ngModel)]="editingDeptName"
+              (keyup.enter)="saveEditDept(dept)"
+            />
+          </td>
+          <td class="text-center">
+            <div class="flex gap-2 justify-center">
+              <!-- Edit actions -->
+              <p-button
+                *ngIf="editingDeptIndex !== i"
+                icon="pi pi-pencil"
+                severity="secondary"
+                [rounded]="true"
+                (click)="startEditDept(i, dept)"
+              ></p-button>
+              <p-button
+                *ngIf="editingDeptIndex === i"
+                icon="pi pi-check"
+                severity="success"
+                [rounded]="true"
+                (click)="saveEditDept(dept)"
+              ></p-button>
+
+              <!-- Delete action -->
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                [rounded]="true"
+                (click)="deleteDept(dept.id)"
+              ></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="2" class="text-center p-4">لا توجد أقسام طبية مسجلة حاليا لهذه المرفق.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</p-dialog>
+
+<!-- Add Stored Department Dialog -->
+<p-dialog
+  [(visible)]="isAddStoredDeptDialogOpen"
+  [modal]="true"
+  [style]="{ width: '420px' }"
+  header="إضافة قسم طبي جديد للنظام"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  [rtl]="true"
+>
+  <div class="p-fluid text-right" style="direction: rtl">
+    <div class="field mb-3">
+      <label class="block text-xs font-bold text-slate-700 mb-1">الاسم بالعربية (مطلوب)</label>
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="newStoredDeptArabic"
+        class="w-full h-10! border rounded p-2"
+        placeholder="مثال: قسم الرنين المغناطيسي"
+      />
+    </div>
+    <div class="field mb-4">
+      <label class="block text-xs font-bold text-slate-700 mb-1">الاسم بالإنجليزية (مطلوب)</label>
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="newStoredDeptEnglish"
+        class="w-full h-10! border rounded p-2 text-left"
+        placeholder="Example: MRI Department"
+      />
+    </div>
+    <div class="flex justify-end gap-3">
+      <p-button
+        label="إلغاء"
+        severity="secondary"
+        (click)="isAddStoredDeptDialogOpen = false"
+        class="h-9!"
+      ></p-button>
+      <p-button
+        label="حفظ وإضافة"
+        severity="success"
+        icon="pi pi-check"
+        (click)="saveNewStoredDept()"
+        [disabled]="!newStoredDeptArabic.trim() || !newStoredDeptEnglish.trim()"
+        class="h-9!"
+      ></p-button>
+    </div>
+  </div>
+</p-dialog>

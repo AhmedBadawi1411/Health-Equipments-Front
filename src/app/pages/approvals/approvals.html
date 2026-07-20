@@ -1,0 +1,325 @@
+<div class="panel-grid-vertical">
+  <div *ngIf="toastMessage" class="toast-alert" [ngClass]="'toast-' + toastMessage.type">
+    <i
+      class="pi"
+      [ngClass]="{
+        'pi-check-circle': toastMessage.type === 'success',
+        'pi-exclamation-triangle': toastMessage.type === 'warning',
+        'pi-times-circle': toastMessage.type === 'error',
+      }"
+    ></i>
+    <span>{{ toastMessage.text }}</span>
+  </div>
+
+  <div class="status-summary-bar">
+    <div class="summary-info">
+      <h2>لوحة مراجعة واستلام عمليات الحصر (المسؤول)</h2>
+      <p>
+        قائمة بالمرافق الصحية وحالة الحصر بها لمراجعتها واستلامها بشكل رسمي وتفعيل طلبات احتياجها.
+      </p>
+    </div>
+  </div>
+
+  <div class="panel-card list-card full-width-card" *ngIf="viewMode() === 'list'">
+    <h2>حالات الحصر للمنشآت الطبية</h2>
+    <p class="card-desc">اضغط على "استلام الحصر" للموافقة الفورية وتفعيل طلبات القسم.</p>
+
+    <!-- Filters -->
+    <div class="flex flex-row gap-4 items-end mb-4! flex-wrap">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-gray-600">بحث</label>
+        <input
+          type="text"
+          pInputText
+          [(ngModel)]="filterSearch"
+          placeholder="ابحث باسم المرفق أو المنطقة أو المدير"
+          class="min-h-11!"
+          style="min-width: 280px"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-gray-600">حالة الحصر</label>
+        <p-select
+          [options]="statusOptions"
+          optionLabel="name"
+          optionValue="value"
+          [(ngModel)]="filterStatus"
+          placeholder="كل الحالات"
+          [showClear]="true"
+          class="h-10"
+          style="min-width: 180px"
+        ></p-select>
+      </div>
+      <div class="pb-0.5! flex flex-row gap-2 flex-1">
+        <p-button icon="pi pi-refresh" label="" severity="secondary" (click)="resetFilters()" />
+        <div class="spacer"></div>
+        <p-button
+          icon="pi pi-file-excel"
+          label="تصدير إلى Excel"
+          severity="success"
+          (click)="exportExcel()"
+        />
+      </div>
+    </div>
+
+    <div *ngIf="filteredFacilities.length === 0" class="empty-state">
+      <i class="pi pi-building text-3xl"></i>
+      <p>لا توجد منشآت صحية مطابقة للبحث.</p>
+    </div>
+
+    <div *ngIf="filteredFacilities.length > 0" class="table-responsive">
+      <table class="data-table admin-table">
+        <thead>
+          <tr>
+            <th>اسم المرفق الصحي</th>
+            <th>البلدية</th>
+            <th>مستوى المرفق</th>
+            <th>السعة السريرية</th>
+            <th>مدير المرفق</th>
+            <th>حالة الطلب</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fac of filteredFacilities">
+            <td>
+              {{ fac.facilityName }}
+            </td>
+            <td>{{ fac.region }}</td>
+            <td>{{ fac.facilityLevel }}</td>
+            <td>{{ fac.bedCapacity }} سرير</td>
+            <td>{{ fac.director }}</td>
+            <td>
+              <span
+                class="badge"
+                [ngClass]="{
+                  'badge-warning': fac.inventoryStatus === 'NOT_STARTED',
+                  'badge-info': fac.inventoryStatus === 'PENDING_APPROVAL',
+                  'badge-success': fac.inventoryStatus === 'APPROVED',
+                  'badge-danger': fac.inventoryStatus === 'REJECTED',
+                }"
+              >
+                {{
+                  fac.inventoryStatus === 'NOT_STARTED'
+                    ? 'لم يبدأ الحصر'
+                    : fac.inventoryStatus === 'PENDING_APPROVAL'
+                      ? 'بانتظار الاستلام'
+                      : fac.inventoryStatus === 'APPROVED'
+                        ? 'تم استلامه '
+                        : 'مرفوض للتعديل'
+                }}
+              </span>
+            </td>
+            <td>
+              <p-button
+                icon="pi pi-cog"
+                [text]="true"
+                severity="secondary"
+                (click)="openMenu($event, rowMenu, fac)"
+                size="small"
+              ></p-button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DETAIL VIEW (SUB-PAGE) -->
+  <div
+    class="panel-card full-width-card detail-view-subpage"
+    *ngIf="viewMode() === 'detail' && selectedFacilityId"
+    style="direction: rtl"
+  >
+    <div class="flex flex-row justify-between items-center mb-6! pb-4!">
+      <div class="flex items-center gap-4">
+        <button class="btn-back" (click)="goBackToList()">
+          <i class="pi pi-arrow-right"></i>
+          <!-- <span>رجوع لقائمة المرفقات</span> -->
+        </button>
+        <div class="h-6 w-px bg-slate-300"></div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">تفاصيل حصر الأجهزة والمستلزمات الطبية</h2>
+          <p class="text-xs text-slate-500 mt-1!">
+            المنشأة الصحية الحالية:
+            {{ selectedFacilityName }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Actions Group Menu inside Detail View -->
+      <div>
+        <p-button
+          icon="pi pi-cog"
+          label="الإجراءات"
+          severity="primary"
+          (click)="openDetailMenu($event, detailMenu)"
+        ></p-button>
+      </div>
+    </div>
+
+    <!-- Details Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <!-- Items table -->
+      <div class="lg:col-span-3">
+        <div class="flex flex-row justify-between items-center mb-4!">
+          <h3 class="font-bold text-slate-800 text-md">أجهزة ومستلزمات المرفق الطبي</h3>
+          <p-button
+            icon="pi pi-file-excel"
+            label="تصدير العناصر إلى Excel"
+            severity="success"
+            (click)="exportFacilityItemsExcel()"
+          />
+        </div>
+
+        <p-table
+          [value]="facilityItems"
+          [tableStyle]="{ 'min-width': '100%' }"
+          [paginator]="true"
+          [rows]="12"
+          stripedRows
+          class="rounded-lg overflow-hidden shadow-sm"
+        >
+          <ng-template #header>
+            <tr>
+              <th>النوع</th>
+              <th>الاسم العلمي</th>
+              <th>القسم</th>
+              <th>الموديل</th>
+              <th>الرقم التسلسلي / الكمية</th>
+              <th>الشركة المصنعة</th>
+              <th>المورد</th>
+              <th>الحالة التشغيلية</th>
+              <th>تاريخ التركيب</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-item>
+            <tr>
+              <td>
+                <p-tag
+                  [severity]="item.itemType === 'supply' ? 'info' : 'success'"
+                  [value]="item.itemType === 'supply' ? 'مستلزم' : 'معدة'"
+                ></p-tag>
+              </td>
+              <td>
+                {{ item.scientificName }}
+              </td>
+              <td>{{ item.department?.departmentName || '-' }}</td>
+              <td>{{ item.model || '-' }}</td>
+              <td>
+                <span *ngIf="item.itemType !== 'supply'">{{ item.serialNumber }}</span>
+                <span *ngIf="item.itemType === 'supply'">{{ item.quantity }} {{ item.unit }}</span>
+              </td>
+              <td>{{ item.manufacturer }}</td>
+              <td>{{ item.supplierCompany }}</td>
+              <td>
+                <p-tag
+                  *ngIf="item.itemType !== 'supply'"
+                  [severity]="
+                    operationalStatusMap.get(item.operationalStatus)?.severity || 'secondary'
+                  "
+                >
+                  {{
+                    operationalStatusMap.get(item.operationalStatus)?.label ||
+                      item.operationalStatus
+                  }}
+                </p-tag>
+                <span *ngIf="item.itemType === 'supply'" class="text-sm text-gray-500">
+                  حد أدنى: {{ item.minimumStock ?? 0 }}
+                </span>
+              </td>
+              <td>{{ item.installationDate || '-' }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="9" class="text-center p-4!">
+                لا توجد عناصر مسجلة في عمليات حصر هذه المرفق.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Sidebar details / Timeline and logs -->
+      <div
+        class="lg:col-span-1 bg-slate-50 p-4! rounded-lg! border border-slate-200 mt-6! card"
+        style="direction: rtl"
+      >
+        <h3
+          class="font-semibold text-slate-800 mb-3! flex items-center gap-2 text-sm border-b pb-2!"
+        >
+          <i class="pi pi-clock text-blue-600"></i>
+          سجل حركات وإجراءات الحصر
+        </h3>
+
+        <div *ngIf="lifecycleLogs.length === 0" class="text-gray-400 text-xs text-center py-4">
+          لا يوجد حركات مسجلة للحصر بعد
+        </div>
+
+        <div class="flex flex-col gap-3 max-h-140 overflow-y-auto">
+          <div
+            *ngFor="let log of lifecycleLogs"
+            class="p-2! rounded border border-slate-100 shadow-sm text-xs"
+            [ngClass]="{
+              'bg-green-50 border-green-100': log.action === 'CREATE',
+              'bg-blue-50 border-blue-100': log.action === 'UPDATE',
+              'bg-red-50 border-red-100': log.action === 'DELETE',
+              'bg-amber-50 border-amber-100': !['CREATE', 'UPDATE', 'DELETE'].includes(log.action),
+            }"
+          >
+            <div class="flex justify-between font-semibold text-slate-700 mb-1!">
+              <span>{{
+                log.action === 'CREATE'
+                  ? 'إنشاء حصر'
+                  : log.action === 'UPDATE'
+                    ? 'تعديل حصر'
+                    : log.action === 'DELETE'
+                      ? 'حذف حصر'
+                      : 'تعديل حالة الاستلام'
+              }}</span>
+            </div>
+            <p class="text-gray-500 text-[11px] mb-1! overflow-hidden">{{ log.details }}</p>
+            <p class="text-gray-600">بواسطة: {{ log.userName }}</p>
+            <p class="text-gray-400 text-[11px] mb-1!">{{ log.createdAt | date: 'medium' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rejection notes dialog -->
+<p-dialog
+  [(visible)]="isRejectDialogOpen"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  header="إرجاع طلب الحصر للتعديل"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+>
+  <div class="p-fluid" style="direction: rtl">
+    <div class="field mb-4!">
+      <label class="block font-medium text-gray-700 mb-2">ملاحظات المراجعة وسبب الإرجاع</label>
+      <textarea
+        rows="5"
+        cols="30"
+        [(ngModel)]="rejectNotes"
+        style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px"
+        placeholder="يرجى كتابة الملاحظات بالتفصيل لتوضيح الأخطاء للمستخدم ليقوم بتعديلها..."
+      ></textarea>
+    </div>
+    <div class="flex justify-end gap-3">
+      <p-button label="إلغاء" severity="secondary" (click)="isRejectDialogOpen = false"></p-button>
+      <p-button
+        label="إرسال الملاحظات وإرجاع الطلب"
+        severity="danger"
+        (click)="confirmReject()"
+      ></p-button>
+    </div>
+  </div>
+</p-dialog>
+
+<p-menu #rowMenu [model]="activeMenuItems" [popup]="true" appendTo="body"></p-menu>
+<p-menu #detailMenu [model]="activeDetailMenuItems" [popup]="true" appendTo="body"></p-menu>

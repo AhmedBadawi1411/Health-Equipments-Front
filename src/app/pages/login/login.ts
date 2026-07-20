@@ -39,10 +39,19 @@ export class Login {
 
   protected login() {
     this.loading.set(true);
+
     this.authService.login(this.email, this.password).subscribe({
       next: (response) => {
-        this.loading.set(false);
-        this.router.navigate(['/home']);
+        this.authService.me().subscribe({
+          next: () => {
+            this.loading.set(false);
+            this.router.navigate(['/home']);
+          },
+          error: () => {
+            this.loading.set(false);
+            this.router.navigate(['/home']);
+          },
+        });
       },
       error: (error) => {
         this.errorMessage = error.error.message;

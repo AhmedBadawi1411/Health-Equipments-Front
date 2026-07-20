@@ -59,6 +59,28 @@ export class CreateUser implements OnInit {
       return;
     }
 
+    if (this.userForm.name.trim().length < 3) {
+      this.toast.add({ severity: 'warn', summary: 'تنبيه', detail: 'يجب ألا يقل الاسم عن 3 أحرف' });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.userForm.email.trim())) {
+      this.toast.add({ severity: 'warn', summary: 'تنبيه', detail: 'يرجى إدخال بريد إلكتروني صالح' });
+      return;
+    }
+
+    const password = this.userForm.password;
+    const hasSpecialChar = /[\W_]/.test(password);
+    if (password.length < 8 || !hasSpecialChar) {
+      this.toast.add({
+        severity: 'warn',
+        summary: 'تنبيه',
+        detail: 'يجب أن تتكون كلمة المرور من 8 رموز على الأقل وتحتوي على رمز خاص واحد على الأقل'
+      });
+      return;
+    }
+
     this.isSubmitting = true;
     this.usersService.createUser(this.userForm).subscribe({
       next: () => {

@@ -1,1 +1,713 @@
-<p>maintenance works!</p>
+<p-toast position="bottom-right"></p-toast>
+
+<!-- Section Header changes based on viewMode -->
+<app-section-header
+  *ngIf="viewMode() === 'list'"
+  [showAddButton]="true"
+  actionLabel="إضافة بلاغ صيانة"
+  sectionTitle="بلاغات وأعطال الأجهزة الطبية "
+  (onAddClickedEvent)="switchToCreate()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'create'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="إنشاء بلاغ صيانة جديد"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'edit'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="تعديل بلاغات الصيانة"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'detail'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="تفاصيل بلاغات الصيانة"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<!-- LIST VIEW -->
+<div class="card mt-4!" *ngIf="viewMode() === 'list'">
+  <div class="filters-wrapper flex flex-row gap-4 items-end mb-4!">
+    <app-text-box-with-label
+      [(value)]="filterSearch"
+      label="البحث عن طريق القسم"
+    ></app-text-box-with-label>
+    <app-select-with-label
+      [filter]="true"
+      filterBy="facilityName"
+      [(selectedItem)]="filterFacilityId"
+      [optionsList]="facilities"
+      optionValue="id"
+      optionLabel="facilityName"
+      label="المرفق الصحي"
+      placeholder="اختر المرفق"
+    ></app-select-with-label>
+
+    <div class="pb-1!">
+      <p-button
+        icon="pi pi-refresh"
+        label=""
+        severity="secondary"
+        (click)="resetFilters()"
+        class="h-10!"
+      />
+    </div>
+  </div>
+
+  <p-table
+    [value]="filteredRequests"
+    [tableStyle]="{ 'min-width': '60rem' }"
+    [paginator]="true"
+    [rows]="15"
+    [rowsPerPageOptions]="[10, 15, 30]"
+    stripedRows
+    [loading]="loading()"
+  >
+    <ng-template #caption>
+      <div class="flex flex-row justify-between items-center pb-4">
+        <span class="font-bold text-slate-700">قائمة بلاغات الصيانة</span>
+        <p-button
+          icon="pi pi-file-excel"
+          label="تصدير إلى Excel"
+          severity="success"
+          (click)="exportExcel()"
+        />
+      </div>
+    </ng-template>
+    <ng-template #header>
+      <tr>
+        <th>رقم البلاغ</th>
+        <th>المرفق الصحي</th>
+        <th>القسم الطبي</th>
+        <th>تاريخ البلاغ</th>
+        <th class="text-center">عدد الأجهزة المعطلة</th>
+        <th class="w-48 text-center">الاجراءات</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-item>
+      <tr>
+        <td>
+          <code>#{{ item.id }}</code>
+        </td>
+        <td>{{ item.facility?.facilityName || 'غير معروف' }}</td>
+        <td>
+          <p-tag
+            severity="secondary"
+            [value]="item.department?.departmentName || 'غير معروف'"
+          ></p-tag>
+        </td>
+        <td>{{ item.requestDate }}</td>
+        <td class="text-center font-bold text-blue-600">{{ item.items?.length || 0 }} أجهزة</td>
+        <td>
+          <div class="flex flex-row gap-2 justify-center">
+            <p-button
+              icon="pi pi-eye"
+              (click)="viewDetail(item.id)"
+              severity="info"
+              rounded
+              label="عرض"
+            />
+            <p-button
+              icon="pi pi-pencil"
+              (click)="editRequest(item.id)"
+              severity="secondary"
+              rounded
+            />
+            <p-button
+              icon="pi pi-trash"
+              (click)="deleteRequest(item.id)"
+              severity="danger"
+              rounded
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6" class="text-center p-4">لا توجد بلاغات صيانة مسجلة حاليا.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- DETAIL VIEW -->
+<div class="card mt-4!" *ngIf="viewMode() === 'detail' && selectedRequest">
+  <div
+    class="grid grid-cols-1 md:grid-cols-5 gap-4 p-4! rounded-lg border border-slate-300 mt-6! bg-white mb-6!"
+  >
+    <div>
+      <span class="text-gray-500 block text-sm">المرفق الصحي:</span>
+      {{ selectedRequest.facility?.facilityName }}
+    </div>
+    <div>
+      <span class="text-gray-500 block text-sm">القسم / الإدارة التابع لها:</span>
+      <p-tag severity="secondary" [value]="selectedRequest.department?.departmentName"></p-tag>
+    </div>
+    <div>
+      <span class="text-gray-500 block text-sm">تاريخ البلاغ:</span>
+      {{ selectedRequest.requestDate }}
+    </div>
+  </div>
+
+  <div class="font-bold text-xl text-surface-900 mb-4!">قائمة الأجهزة المشتكى منها والأعطال</div>
+
+  <p-table
+    [value]="selectedRequest.items || []"
+    [tableStyle]="{ 'min-width': '60rem' }"
+    [paginator]="true"
+    [rows]="15"
+    stripedRows
+  >
+    <ng-template #caption>
+      <div class="flex flex-row justify-between items-center pb-4">
+        <span class="font-bold text-slate-700">الأجهزة المدرجة في بلاغ الصيانة الحالي</span>
+        <p-button
+          icon="pi pi-file-excel"
+          label="تصدير الأجهزة إلى Excel"
+          severity="success"
+          (click)="exportRequestItemsExcel()"
+        />
+      </div>
+    </ng-template>
+    <ng-template #header>
+      <tr>
+        <th>اسم الجهاز</th>
+        <th>الموديل</th>
+        <th>الرقم التسلسلي</th>
+        <th>تاريخ الصنع</th>
+        <th>عقد الصيانة</th>
+        <th>الحالة الفنية الراهنة</th>
+        <th>وصف المشكلة</th>
+        <th>المهندس المسؤول</th>
+        <th>رئيس القسم</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-item>
+      <tr>
+        <td>
+          {{ item.deviceName }}
+        </td>
+        <td>{{ item.model }}</td>
+        <td>
+          <code>{{ item.serialNumber }}</code>
+        </td>
+        <td>{{ item.manufacturingDate || '-' }}</td>
+        <td>
+          <span *ngIf="item.maintenanceContract === 'Available'; else noContract">
+            <span class="text-emerald-600 font-medium block text-sm">متوفر </span>
+            <span class="text-xs mt-1! bg-slate-200 p-1! rounded-lg!  text-slate-500 block" *ngIf="item.contractNumber">رقم: {{ item.contractNumber }}</span>
+            <span class="  text-xs mt-1! bg-slate-200 p-1! rounded-lg!  text-slate-500 block" *ngIf="item.years || item.months || item.days">
+              <span *ngIf="item.years">{{ item.years }} سنة </span>
+              <span *ngIf="item.months">{{ item.months }} شهر </span>
+              <span *ngIf="item.days">{{ item.days }} يوم</span>
+            </span>
+          </span>
+          <ng-template #noContract>
+            <span class="text-red-500 text-sm">غير متوفر</span>
+          </ng-template>
+        </td>
+        <td>
+          <p-tag [severity]="conditionMap.get(item.deviceCondition)?.severity || 'secondary'">
+            {{ conditionMap.get(item.deviceCondition)?.label || item.deviceCondition }}
+          </p-tag>
+        </td>
+        <td>{{ item.faultDescription }}</td>
+        <td>{{ item.technicalEngineer }} ({{ item.phoneNumber }})</td>
+        <td>{{ item.headOfDepartment }}</td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="9" class="text-center p-4">لا توجد بنود مسجلة في هذا البلاغ.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- CREATE / EDIT VIEW -->
+<div *ngIf="viewMode() === 'create' || viewMode() === 'edit'">
+  <!-- Master Details Selector -->
+  <div class="form-wrapper">
+    <div class="flex flex-col gap-2">
+      <label for="surveyFacilityId">المرفق الصحي *</label>
+      <p-select
+        [options]="facilities"
+        optionLabel="facilityName"
+        optionValue="id"
+        [filter]="true"
+        filterBy="facilityName"
+        [showClear]="true"
+        placeholder="إختر المرفق الصحي"
+        class="w-full h-10!"
+        id="surveyFacilityId"
+        [ngModel]="selectedFacilityId()"
+        (ngModelChange)="onFacilityChange($event)"
+        [disabled]="viewMode() === 'edit'"
+      ></p-select>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="itemDeptId">القسم / الإدارة التابع لها *</label>
+      <p-select
+        [options]="departments"
+        optionLabel="departmentName"
+        optionValue="id"
+        [filter]="true"
+        filterBy="departmentName"
+        [showClear]="true"
+        placeholder="{{ selectedFacilityId() ? 'إختر القسم الطبي' : 'يجب إختر المرفق أولا' }}"
+        class="w-full h-10!"
+        id="itemDeptId"
+        [(ngModel)]="selectedDepartmentId"
+        [disabled]="!selectedFacilityId() || viewMode() === 'edit'"
+      ></p-select>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="requestDate">تاريخ البلاغ *</label>
+      <input
+        id="requestDate"
+        type="date"
+        pInputText
+        class="w-full"
+        [(ngModel)]="requestDate"
+        [disabled]="true"
+      />
+    </div>
+  </div>
+
+  <!-- Detail Need Section -->
+  <div class="font-bold text-xl text-surface-900 dark:text-surface-0 mt-6! mb-2! px-4!">
+    تفاصيل الأجهزة المعطلة والشكوى الفنية
+  </div>
+
+  <div class="form-wrapper mt-2!">
+    <!-- 1. Device Name -->
+    <div class="flex flex-col gap-2">
+      <label for="deviceName">اسم الجهاز المشتكي منه *</label>
+      <p-iconfield class="w-full">
+        <input
+          id="deviceName"
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="مثال: جهاز تنفس اصطناعي Ventilator"
+          [(ngModel)]="currentItem.deviceName"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        />
+        <p-inputicon class="pi pi-info-circle" />
+      </p-iconfield>
+    </div>
+
+    <!-- 2. Model -->
+    <div class="flex flex-col gap-2">
+      <label for="model">الموديل *</label>
+      <input
+        id="model"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="مثال: Puritan Bennett 840"
+        [(ngModel)]="currentItem.model"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      />
+    </div>
+
+    <!-- 3. Serial Number -->
+    <div class="flex flex-col gap-2">
+      <label for="serialNumber">الرقم التسلسلي للجهاز *</label>
+      <p-iconfield class="w-full">
+        <input
+          id="serialNumber"
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="SN-XXXXX"
+          [(ngModel)]="currentItem.serialNumber"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        />
+        <p-inputicon class="pi pi-barcode" />
+      </p-iconfield>
+    </div>
+
+    <!-- 4. Manufacturer -->
+    <div class="flex flex-col gap-2">
+      <label for="manufacturer">الشركة المصنعة للجهاز *</label>
+      <input
+        id="manufacturer"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="مثال: Covidien"
+        [(ngModel)]="currentItem.manufacturer"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      />
+    </div>
+
+    <!-- 5. Country of Origin -->
+    <div class="flex flex-col gap-2">
+      <label for="countryOfOrigin">بلد المنشأ *</label>
+      <input
+        id="countryOfOrigin"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="مثال: أيرلندا"
+        [(ngModel)]="currentItem.countryOfOrigin"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      />
+    </div>
+
+    <!-- 5.5 Manufacturing Date -->
+    <div class="flex flex-col gap-2">
+      <label for="manufacturingDate">تاريخ الصنع</label>
+      <input
+        id="manufacturingDate"
+        type="date"
+        pInputText
+        class="w-full"
+        [(ngModel)]="currentItem.manufacturingDate"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        [max]="todayDate"
+      />
+    </div>
+
+    <!-- 6. Installation Date -->
+    <div class="flex flex-col gap-2">
+      <label for="installationDate">تاريخ التركيب والتشغيل *</label>
+      <input
+        id="installationDate"
+        type="date"
+        pInputText
+        class="w-full"
+        [(ngModel)]="currentItem.installationDate"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        [max]="todayDate"
+      />
+    </div>
+
+        <div class="flex flex-col gap-2">
+      <label for="warranty" >الضمان *</label>
+      <p-select
+        [options]="warrantyOptions"
+        optionLabel="name"
+        optionValue="value"
+        class="w-full h-10!"
+        id="warranty"
+        [(ngModel)]="currentItem.warranty"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      ></p-select>
+    </div>
+
+    <!-- 7. Maintenance Contract -->
+    <div class="flex flex-col gap-2">
+      <label for="maintenanceContract">عقد الصيانة *</label>
+      <p-select
+        [options]="contractOptions"
+        optionLabel="name"
+        optionValue="value"
+        class="w-full h-10!"
+        id="maintenanceContract"
+        [(ngModel)]="currentItem.maintenanceContract"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      ></p-select>
+    </div>
+ 
+    <!-- Contract Details (Only visible if maintenance contract is Available) -->
+    <div class="flex flex-row gap-1 items-center justify-center" *ngIf="currentItem.maintenanceContract === 'Available'">
+      <!-- Contract Number -->
+      <div class="flex flex-col gap-2 flex-2 w-full">
+        <label for="contractNumber">رقم عقد الصيانة</label>
+        <input
+          id="contractNumber"
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="أدخل رقم العقد"
+          [(ngModel)]="currentItem.contractNumber"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        />
+      </div>
+
+      <!-- Contract Years -->
+      <div class="flex flex-col gap-2 flex-1 w-full">
+        <label for="contractYears"> عدد السنوات</label>
+        <input
+          id="contractYears"
+          type="number"
+          min="0"
+          pInputText
+          class="w-full"
+          placeholder="السنوات"
+          [(ngModel)]="currentItem.years"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        />
+      </div>
+
+      <!-- Contract Months -->
+      <div class="flex flex-col gap-2 flex-1 w-full">
+        <label for="contractMonths" >عدد الأشهر</label>
+        <input
+          id="contractMonths"
+          type="number"
+          min="0"
+          max="11"
+          pInputText
+          class="w-full"
+          placeholder="الأشهر"
+          [(ngModel)]="currentItem.months"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        />
+      </div>
+
+      <!-- Contract Days -->
+      <div class="flex flex-col gap-2 flex-1 w-full">
+        <label for="contractDays" >عدد الأيام</label>
+        <input
+          id="contractDays"
+          type="number"
+          min="0"
+          max="30"
+          pInputText
+          class="w-full"
+          placeholder="الأيام"
+          [(ngModel)]="currentItem.days"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        />
+      </div>
+    </div>
+
+    <!-- 8. Warranty -->
+
+    <!-- 9. Condition -->
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="deviceCondition">الحالة الفنية الراهنة للجهاز *</label>
+      <p-select
+        [options]="conditionOptions"
+        optionLabel="name"
+        optionValue="value"
+        class="w-full h-10!"
+        id="deviceCondition"
+        [(ngModel)]="currentItem.deviceCondition"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      ></p-select>
+    </div>
+
+    <!-- 10. Fault Description -->
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="faultDescription">وصف دقيق للمشكلة والعطل الفني الملاحظ *</label>
+      <textarea
+        id="faultDescription"
+        rows="3"
+        class="w-full p-inputtext"
+        placeholder="مثال: انخفاض ضغط الأوكسجين وتكرار إنذارات انخفاض الغازات..."
+        [(ngModel)]="currentItem.faultDescription"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      ></textarea>
+    </div>
+
+    <!-- 11. Engineer Name -->
+    <div class="flex flex-col gap-2">
+      <label for="technicalEngineer">المهندس الفني المسؤول *</label>
+      <input
+        id="technicalEngineer"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="اسم المهندس المسؤول"
+        [(ngModel)]="currentItem.technicalEngineer"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      />
+    </div>
+
+    <!-- 12. Phone number -->
+    <div class="flex flex-col gap-2">
+      <label for="phoneNumber">رقم الهاتف للاتصال *</label>
+      <input
+        id="phoneNumber"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="مثال: 091XXXXXXX"
+        [(ngModel)]="currentItem.phoneNumber"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      />
+    </div>
+
+    <!-- 13. Head of department -->
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="headOfDepartment">رئيس القسم المُستلم *</label>
+      <input
+        id="headOfDepartment"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="اسم رئيس القسم الطبي"
+        [(ngModel)]="currentItem.headOfDepartment"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+      />
+    </div>
+  </div>
+
+  <!-- Add Request button -->
+  <div class="card flex justify-center mt-4!">
+    <button
+      pButton
+      class="w-full! h-12! bg-gray-100! border-dashed!"
+      [disabled]="
+        !selectedFacilityId() ||
+        !selectedDepartmentId ||
+        !currentItem.deviceName ||
+        !currentItem.model ||
+        !currentItem.serialNumber ||
+        !currentItem.faultDescription ||
+        !currentItem.technicalEngineer ||
+        !currentItem.phoneNumber ||
+        !currentItem.headOfDepartment
+      "
+      (click)="addItem()"
+    >
+      <i class="pi pi-plus text-gray-700" pButtonIcon></i>
+      <span pButtonLabel class="text-gray-700">
+        {{
+          editingItemIndex !== null
+            ? 'تحديث بلاغ العطل في القائمة'
+            : 'إدراج وإضافة البلاغ للدفعة الحالية'
+        }}
+      </span>
+    </button>
+  </div>
+
+  <!-- Table of added items in memory -->
+  <div class="card mt-4!">
+    <p-table
+      [value]="requestItems()"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [paginator]="true"
+      [rows]="10"
+      stripedRows
+    >
+      <ng-template #header>
+        <tr>
+          <th>اسم الجهاز المعطل</th>
+          <th>الموديل / التسلسلي</th>
+          <th>الشركة والبلد</th>
+          <th>تاريخ الصنع</th>
+          <th>تاريخ التركيب</th>
+          <th>عقد الصيانة</th>
+          <th>الحالة الفنية</th>
+          <th>وصف العطل الفني</th>
+          <th>الاجراءات</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item let-i="rowIndex">
+        <tr>
+          <td>
+            {{ item.deviceName }}
+          </td>
+          <td>
+            {{ item.model }} / <code>{{ item.serialNumber }}</code>
+          </td>
+          <td>{{ item.manufacturer }} ({{ item.countryOfOrigin }})</td>
+          <td>{{ item.manufacturingDate || '-' }}</td>
+          <td>{{ item.installationDate }}</td>
+          <td>
+            <span *ngIf="item.maintenanceContract === 'Available'; else noContractMem">
+              <span class="text-green-600 font-bold block text-xs">متوفر وساري</span>
+              <span class="text-[10px] text-gray-500 block" *ngIf="item.contractNumber">رقم: {{ item.contractNumber }}</span>
+              <span class="text-[10px] text-gray-500 block" *ngIf="item.years || item.months || item.days">
+                المدة: 
+                <span *ngIf="item.years">{{ item.years }}س </span>
+                <span *ngIf="item.months">{{ item.months }}ش </span>
+                <span *ngIf="item.days">{{ item.days }}ي</span>
+              </span>
+            </span>
+            <ng-template #noContractMem>
+              <span class="text-red-500 text-xs">غير متوفر</span>
+            </ng-template>
+          </td>
+          <td>
+            <p-tag [severity]="conditionMap.get(item.deviceCondition)?.severity || 'secondary'">
+              {{ conditionMap.get(item.deviceCondition)?.label || item.deviceCondition }}
+            </p-tag>
+          </td>
+          <td>{{ item.faultDescription }}</td>
+          <td>
+            <div class="flex flex-row gap-2">
+              <p-button icon="pi pi-pencil" (click)="editItem(i)" severity="secondary" rounded />
+              <p-button
+                icon="pi pi-trash"
+                (click)="deleteItemFromList(i)"
+                severity="danger"
+                rounded
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="9" class="text-center p-4">لم يتم إضافة بلاغات صيانة للدفعة الحالية.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Submit entire requests array button -->
+  <div class="card flex justify-center mt-4!">
+    <button
+      pButton
+      class="w-full! h-12!"
+      [disabled]="!selectedFacilityId() || !selectedDepartmentId || requestItems().length === 0"
+      (click)="saveRequest()"
+    >
+      <i class="pi pi-check" pButtonIcon></i>
+      <span pButtonLabel>
+        {{
+          viewMode() === 'edit'
+            ? 'حفظ وتعديل بلاغات الصيانة بالكامل'
+            : 'حفظ وإرسال بلاغات الصيانة بالكامل'
+        }}
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- Custom Delete Confirmation Modal Dialog -->
+<p-dialog
+  [(visible)]="isDeleteConfirmOpen"
+  [modal]="true"
+  [style]="{ width: '35vw' }"
+  header="تأكيد حذف بلاغ الصيانة"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="p-3">
+    <p class="font-semibold text-lg text-red-600 mb-2">تنبيه هام جدا!</p>
+    <p class="text-surface-700 dark:text-surface-300">
+      هل أنت متأكد من رغبتك في حذف بلاغ الصيانة هذا بالكامل؟ سيؤدي ذلك إلى مسحه من المنظومة نهائيا.
+      لا يمكن التراجع عن هذا الإجراء.
+    </p>
+    <div class="flex justify-end gap-3 mt-5">
+      <p-button
+        label="إلغاء الحذف"
+        severity="secondary"
+        (click)="isDeleteConfirmOpen = false"
+      ></p-button>
+      <p-button
+        label="نعم، احذف البلاغ"
+        severity="danger"
+        (click)="confirmDeleteRequest()"
+      ></p-button>
+    </div>
+  </div>
+</p-dialog>

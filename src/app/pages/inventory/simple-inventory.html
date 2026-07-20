@@ -1,0 +1,974 @@
+<p-toast position="bottom-right"></p-toast>
+
+<app-section-header
+  *ngIf="viewMode() === 'list'"
+  [showAddButton]="authService.hasPermission('inventory:create')"
+  actionLabel="إضافة سجل حصر جديد"
+  sectionTitle="حصر الأجهزة والمستلزمات الطبية"
+  (onAddClickedEvent)="switchToCreate()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'create'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="بدء عملية حصر جديدة"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'edit'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="تعديل عملية حصر قائمة"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'detail'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="تفاصيل سجل الحصر"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<!-- LIST VIEW -->
+<div class="card mt-4!" *ngIf="viewMode() === 'list'">
+  <div class="filters-wrapper flex flex-row gap-4 items-end mb-4!">
+    <app-text-box-with-label
+      [(value)]="filterSearch"
+      label="البحث عن طريق كاتب السجل أو الملاحظات"
+    ></app-text-box-with-label>
+    <app-select-with-label
+      [(selectedItem)]="filterFacilityId"
+      [optionsList]="facilities"
+      optionValue="id"
+      optionLabel="facilityName"
+      [filter]="true"
+      filterBy="facilityName"
+      label="المرفق الصحي"
+      placeholder="اختر المرفق"
+    ></app-select-with-label>
+    <!-- <app-select-with-label [(selectedItem)]="filterSurveyType" [optionsList]="surveyTypeOptions" optionValue="value" optionLabel="name" label="نوع الحصر" placeholder="اختر النوع"></app-select-with-label> -->
+    <div class="pb-1!">
+      <p-button
+        icon="pi pi-refresh"
+        label=""
+        severity="secondary"
+        (click)="resetFilters()"
+        class="h-10!"
+      />
+    </div>
+  </div>
+
+  <div class="table-wrapper card-shadow">
+    <p-table
+      [value]="filteredSurveys"
+      [tableStyle]="{ 'min-width': '60rem' }"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 30]"
+      stripedRows
+      [loading]="loading()"
+    >
+      <ng-template #caption>
+        <div class="flex flex-row justify-between items-center pb-4!">
+          <span class="font-bold text-slate-700">قائمة سجلات الحصر</span>
+          <p-button
+            icon="pi pi-file-excel"
+            label="تصدير إلى Excel"
+            severity="success"
+            (click)="exportExcel()"
+          />
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th>القسم الطبي</th>
+          <th>المرفق الصحي</th>
+          <th>تاريخ الحصر</th>
+          <th>الملاحظات العامة</th>
+          <th>كاتب السجل</th>
+          <th class="text-center">عدد العناصر</th>
+          <th class="w-48 text-center">الاجراءات</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td>
+            {{ item.department?.departmentName || 'العام' }}
+          </td>
+          <td>{{ item.facility?.facilityName || 'غير معروف' }}</td>
+          <td>{{ item.surveyDate }}</td>
+
+          <td>{{ item.notes || '-' }}</td>
+          <td>{{ item.createdBy }}</td>
+          <td class="text-center font-bold text-blue-600">{{ item.items?.length || 0 }} عناصر</td>
+          <td>
+            <div class="flex flex-row gap-2 justify-center">
+              <p-button
+                icon="pi pi-eye"
+                (click)="viewDetail(item.facilityId, item.departmentId)"
+                severity="info"
+                rounded
+                label="عرض"
+              />
+              <p-button
+                *ngIf="authService.hasPermission('inventory:update')"
+                icon="pi pi-pencil"
+                (click)="editSurvey(item.facilityId, item.departmentId)"
+                severity="secondary"
+                rounded
+              />
+              <p-button
+                *ngIf="authService.hasPermission('inventory:delete')"
+                icon="pi pi-trash"
+                (click)="deleteSurvey(item.facilityId, item.departmentId)"
+                severity="danger"
+                rounded
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="text-center p-4!">لا توجد سجلات حصر مسجلة حاليا.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- DETAIL VIEW -->
+<div class="card mt-4!" *ngIf="viewMode() === 'detail' && selectedSurvey">
+  <!-- Warning if there are review notes -->
+  @if (reviewNotesHistory.length > 0) {
+    <div
+      class="border border-amber-200 bg-[#FFFBEB] border-r-4 border-r-amber-500 rounded-lg p-4! flex flex-col gap-2"
+    >
+      <p class="text-amber-800 font-semibold text-lg">ملاحظات المراجعة وإرشادات المسؤول</p>
+      @for (note of reviewNotesHistory; track $index) {
+        <div class="wrapper bg-[#FFFDF5] border border-amber-200 p-4! rounded">
+          <div class="flex flex-row justify-between align-middle items-center">
+            <p class="text-amber-700 font-medium text-md">{{ note.userName }}</p>
+            <span class="text-gray-500 block mt-1 text-sm">{{
+              note.createdAt | date: 'medium'
+            }}</span>
+          </div>
+          <span class="text-gray-600 block mt-1 text-sm">{{ note.note }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <!-- Left Column: survey details and items table -->
+    <div class="lg:col-span-3">
+      <div
+        class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6! mt-6! border-b p-4! bg-white rounded-lg border border-slate-200 card"
+      >
+        <div>
+          <span class="text-gray-500 block text-xs">المرفق الصحي:</span>
+          {{ selectedSurvey.facility?.facilityName }}
+        </div>
+        <div>
+          <span class="text-gray-500 block text-xs">القسم الطبي:</span>
+          {{ selectedSurvey.department?.departmentName || 'العام' }}
+        </div>
+        <div>
+          <span class="text-gray-500 block text-xs">تاريخ وجدولة الحصر:</span>
+          {{ selectedSurvey.surveyDate }}
+        </div>
+        <div>
+          <span class="text-gray-500 block text-xs">مدخل السجل:</span>
+          {{ selectedSurvey.createdBy }}
+        </div>
+        <div class="col-span-4 mt-2">
+          <span class="text-gray-500 block text-xs">ملاحظات إدارية عامة:</span>
+          <span class="text-sm text-gray-700">{{
+            selectedSurvey.notes || 'لا يوجد ملاحظات إضافية'
+          }}</span>
+        </div>
+      </div>
+
+      <div class="font-bold text-lg text-surface-900 mb-3">قائمة العناصر المدرجة في السجل</div>
+
+      <p-table
+        [value]="selectedSurvey.items || []"
+        [tableStyle]="{ 'min-width': '100%' }"
+        [paginator]="true"
+        [rows]="15"
+        stripedRows
+      >
+        <ng-template #caption>
+          <div class="flex flex-row justify-between items-center pb-4">
+            <span class="font-bold text-slate-700">عناصر سجل الحصر الحالي</span>
+            <p-button
+              icon="pi pi-file-excel"
+              label="تصدير العناصر إلى Excel"
+              severity="success"
+              (click)="exportSurveyItemsExcel()"
+            />
+          </div>
+        </ng-template>
+        <ng-template #header>
+          <tr>
+            <th>ت</th>
+            <th>النوع</th>
+            <th>صورة الجهاز</th>
+            <th>القسم الطبي</th>
+            <th>الاسم العلمي</th>
+            <th>الموديل</th>
+            <th>الرقم التسلسلي</th>
+            <th>الشركة المصنعة</th>
+            <th>بلد المنشأ</th>
+            <th>تاريخ الصنع</th>
+            <th>تاريخ التركيب</th>
+            <th>الحالة التشغيلية</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-item>
+          <tr>
+            <td>
+              <code>{{ item.number }}</code>
+            </td>
+            <td>
+              <p-tag
+                [severity]="item.itemType === 'supply' ? 'success' : 'info'"
+                [value]="item.itemType === 'supply' ? 'مستلزمات ومشغلات طبية' : 'معدات وأجهزة طبية'"
+              ></p-tag>
+            </td>
+            <td>
+              <img
+                *ngIf="item.itemImage"
+                [src]="getItemImageUrl(item.itemImage)"
+                alt="Device Image"
+                class="w-12 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer hover:scale-110 transition-transform"
+                (click)="showLargeImage(item.itemImage)"
+              />
+              <span *ngIf="!item.itemImage" class="text-xs text-slate-400">لا توجد صورة</span>
+            </td>
+            <td>
+              <p-tag
+                severity="secondary"
+                [value]="item.department?.departmentName || 'غير معروف'"
+              ></p-tag>
+            </td>
+            <td>
+              {{ item.scientificName }}
+            </td>
+            <td>{{ item.model || '-' }}</td>
+            <td>
+              <code>{{ item.serialNumber || '-' }}</code>
+            </td>
+            <td>{{ item.manufacturer }}</td>
+            <td>{{ item.countryOfOrigin }}</td>
+            <td>{{ item.manufacturingDate || '-' }}</td>
+            <td>{{ item.installationDate || '-' }}</td>
+            <td>
+              <p-tag
+                [severity]="
+                  operationalStatusMap.get(item.operationalStatus)?.severity || 'secondary'
+                "
+              >
+                {{
+                  operationalStatusMap.get(item.operationalStatus)?.label ||
+                    item.operationalStatus ||
+                    '-'
+                }}
+              </p-tag>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="11" class="text-center p-4">لا توجد عناصر مسجلة في هذا السجل.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- Right Column: Timeline logs -->
+    <div
+      class="lg:col-span-1 card bg-slate-50 p-4! rounded-lg! border border-slate-200 mt-6!"
+      style="direction: rtl"
+    >
+      <h3 class="font-semibold text-slate-800 mb-3! flex items-center gap-2 text-sm border-b pb-2!">
+        <i class="pi pi-clock text-blue-600"></i>
+        سجل حركات وإجراءات الحصر
+      </h3>
+
+      <div *ngIf="lifecycleLogs.length === 0" class="text-gray-400 text-xs text-center py-4">
+        لا يوجد حركات مسجلة للحصر بعد
+      </div>
+
+      <div class="flex flex-col gap-3 max-h-140 overflow-y-auto">
+        <div
+          *ngFor="let log of lifecycleLogs"
+          class="p-2! rounded border border-slate-100 shadow-sm text-xs"
+          [ngClass]="{
+            'bg-green-50 border-green-100': log.action === 'CREATE',
+            'bg-blue-50 border-blue-100': log.action === 'UPDATE',
+            'bg-red-50 border-red-100': log.action === 'DELETE',
+            'bg-amber-50 border-amber-100': !['CREATE', 'UPDATE', 'DELETE'].includes(log.action),
+          }"
+        >
+          <div class="flex justify-between font-semibold text-slate-700 mb-1">
+            <span>{{
+              log.action === 'CREATE'
+                ? 'إنشاء حصر'
+                : log.action === 'UPDATE'
+                  ? 'تعديل حصر'
+                  : log.action === 'DELETE'
+                    ? 'حذف حصر'
+                    : 'تعديل حالة الاستلام'
+            }}</span>
+          </div>
+          <p class="text-gray-500 text-[11px] mb-1 overflow-hidden">{{ log.details }}</p>
+          <p class="text-gray-600">بواسطة: {{ log.userName }}</p>
+          <p class="text-gray-400 text-[11px] mb-1">{{ log.createdAt | date: 'medium' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE / EDIT VIEW -->
+<div *ngIf="viewMode() === 'create' || viewMode() === 'edit'">
+  <!-- Master Details Block -->
+  @if (reviewNotesHistory.length > 0) {
+    <div
+      class="border border-amber-200 bg-[#FFFBEB] border-r-4 border-r-amber-500 rounded-lg p-4! flex flex-col gap-2"
+    >
+      <p class="text-amber-800 font-semibold text-lg">ملاحظات المراجعة وإرشادات المسؤول</p>
+      @for (note of reviewNotesHistory; track $index) {
+        <div class="wrapper bg-[#FFFDF5] border border-amber-200 p-4! rounded">
+          <div class="flex flex-row justify-between align-middle items-center">
+            <p class="text-amber-700 font-medium text-md">{{ note.userName }}</p>
+            <span class="text-gray-500 block mt-1 text-sm">{{
+              note.createdAt | date: 'medium'
+            }}</span>
+          </div>
+          <span class="text-gray-600 block mt-1 text-sm">{{ note.note }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="form-wrapper">
+    <div class="flex flex-col gap-2">
+      <label for="surveyFacilityId">المرفق الصحي *</label>
+      <p-select
+        [options]="facilities"
+        optionLabel="facilityName"
+        optionValue="id"
+        [filter]="true"
+        filterBy="facilityName"
+        [showClear]="true"
+        placeholder="إختر المرفق الصحي"
+        class="w-full h-10!"
+        id="surveyFacilityId"
+        [ngModel]="surveyFacilityId()"
+        (ngModelChange)="onFacilityChange($event)"
+        [disabled]="viewMode() === 'edit' || surveyItems().length > 0"
+      ></p-select>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="surveyDepartmentId">القسم الطبي *</label>
+      <p-select
+        [options]="departments"
+        optionLabel="departmentName"
+        optionValue="id"
+        [filter]="true"
+        filterBy="departmentName"
+        [showClear]="true"
+        placeholder="{{ surveyFacilityId() ? 'إختر القسم الطبي' : 'يجب اختيار المرفق أولا' }}"
+        class="w-full h-10!"
+        id="surveyDepartmentId"
+        [ngModel]="surveyDepartmentId()"
+        (ngModelChange)="surveyDepartmentId.set($event)"
+        [disabled]="!surveyFacilityId() || viewMode() === 'edit' || surveyItems().length > 0"
+      ></p-select>
+    </div>
+
+    <div
+      *ngIf="surveyItems().length > 0"
+      class="col-span-3 border border-amber-200 bg-amber-50/50 rounded-lg p-3 text-amber-700 text-sm flex items-center gap-2"
+    >
+      <i class="pi pi-exclamation-triangle"></i>
+      <span
+        >لا يمكن تعديل المرفق الصحي أو القسم الطبي بعد إضافة عناصر إلى القائمة. لتغييرهما، يرجى حذف
+        العناصر المدرجة أدناه أولاً.</span
+      >
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="surveyDate">تاريخ عملية الحصر *</label>
+      <input
+        id="surveyDate"
+        type="date"
+        pInputText
+        class="w-full"
+        [(ngModel)]="surveyDate"
+        [disabled]="true"
+      />
+    </div>
+
+    <!-- <div class="flex flex-col gap-2">
+      <label for="surveyType">تصنيف / نوع الحصر *</label>
+      <p-select
+        [options]="surveyTypeOptions"
+        optionLabel="name"
+        optionValue="value"
+        class="w-full h-10!"
+        id="surveyType"
+        [(ngModel)]="surveyType"
+      ></p-select>
+    </div> -->
+
+    <div class="flex flex-col gap-2 col-span-3">
+      <label for="notes">ملاحظات وتفاصيل إضافية</label>
+      <p-iconfield class="w-full">
+        <input
+          id="notes"
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="مثال: حصر عيادات العيون وقسم الطوارئ السنوي"
+          [(ngModel)]="notes"
+        />
+        <p-inputicon class="pi pi-file-edit" />
+      </p-iconfield>
+    </div>
+  </div>
+
+  <!-- Detail Item Entry Form -->
+  <div class="font-bold text-xl text-surface-900 dark:text-surface-0 mt-6! mb-2! px-4!">
+    تفاصيل العناصر المدرجة
+  </div>
+
+  <div class="form-wrapper grid-cols-3! mt-2!">
+    <!-- Item Type Selection -->
+    <div class="flex flex-col gap-2 col-span-3">
+      <label class="font-semibold">نوع الحصر *</label>
+      <div class="flex gap-8 items-center h-10">
+        <div class="flex items-center gap-2">
+          <p-radioButton
+            name="itemType"
+            value="equipment"
+            [(ngModel)]="currentItem.itemType"
+            inputId="typeEquipment"
+            (ngModelChange)="onItemTypeChange()"
+          ></p-radioButton>
+          <label for="typeEquipment" class="cursor-pointer font-medium">معدات وأجهزة طبية</label>
+        </div>
+        <div class="flex items-center gap-2">
+          <p-radioButton
+            name="itemType"
+            value="supply"
+            [(ngModel)]="currentItem.itemType"
+            inputId="typeSupply"
+            (ngModelChange)="onItemTypeChange()"
+          ></p-radioButton>
+          <label for="typeSupply" class="cursor-pointer font-medium">مستلزمات ومشغلات طبية</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="scientificName">الاسم العلمي *</label>
+
+      <ng-container *ngIf="currentItem.itemType === 'equipment'; else supplyInput">
+        <p-select
+          [options]="filteredStoredDevices"
+          optionLabel="englishName"
+          optionValue="englishName"
+          [(ngModel)]="currentItem.scientificName"
+          placeholder="اختر الاسم العلمي للجهاز"
+          class="w-full h-10!"
+          [editable]="true"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+        >
+          <ng-template #item let-option>
+            <div class="flex flex-col gap-0.5 text-right w-full" style="direction: rtl">
+              <span class="text-xs font-semibold text-slate-800">{{ option.englishName }}</span>
+              <span class="text-[10px] text-slate-400 font-normal">{{ option.arabicName }}</span>
+            </div>
+          </ng-template>
+          <ng-template #emptyfilter>
+            <div class="p-2 flex flex-col gap-2 items-center text-center">
+              <span class="text-xs text-slate-500">الجهاز غير مسجل في قاعدة البيانات</span>
+              <p-button
+                label="إضافة جهاز جديد للنظام"
+                icon="pi pi-plus"
+                severity="success"
+                class="w-full"
+                (click)="openAddStoredDeviceDialog()"
+              ></p-button>
+            </div>
+          </ng-template>
+          <ng-template #empty>
+            <div class="p-2 flex flex-col gap-2 items-center text-center">
+              <span class="text-xs text-slate-500">لا توجد أجهزة مسجلة</span>
+              <p-button
+                label="إضافة جهاز جديد للنظام"
+                icon="pi pi-plus"
+                severity="success"
+                class="w-full"
+                (click)="openAddStoredDeviceDialog()"
+              ></p-button>
+            </div>
+          </ng-template>
+        </p-select>
+      </ng-container>
+
+      <ng-template #supplyInput>
+        <p-iconfield class="w-full">
+          <input
+            id="scientificName"
+            type="text"
+            pInputText
+            class="w-full"
+            placeholder="مثال: قفازات طبية معقمة"
+            [(ngModel)]="currentItem.scientificName"
+            [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+          />
+          <p-inputicon class="pi pi-info-circle" />
+        </p-iconfield>
+      </ng-template>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="manufacturer">الشركة المصنعة</label>
+      <input
+        id="manufacturer"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="مثال: GE Healthcare"
+        [(ngModel)]="currentItem.manufacturer"
+        [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+      />
+    </div>
+
+    @if (currentItem.itemType === 'equipment') {
+      <div class="flex flex-col gap-2">
+        <label for="model">الموديل (Model) *</label>
+        <input
+          id="model"
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="مثال: MAC 2000"
+          [(ngModel)]="currentItem.model"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="serialNumber">الرقم التسلسلي (S/N) *</label>
+        <p-iconfield class="w-full">
+          <input
+            id="serialNumber"
+            type="text"
+            pInputText
+            class="w-full"
+            placeholder="مثال: SN-901828"
+            [(ngModel)]="currentItem.serialNumber"
+            [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+          />
+          <p-inputicon class="pi pi-barcode" />
+        </p-iconfield>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="countryOfOrigin">بلد المنشأ</label>
+        <input
+          id="countryOfOrigin"
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="مثال: الولايات المتحدة"
+          [(ngModel)]="currentItem.countryOfOrigin"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+        />
+      </div>
+
+      <!-- Manufacturing Date -->
+      <div class="flex flex-col gap-2">
+        <label for="manufacturingDate">تاريخ الصنع</label>
+        <input
+          id="manufacturingDate"
+          type="date"
+          pInputText
+          class="w-full"
+          [(ngModel)]="currentItem.manufacturingDate"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+          [max]="todayDate"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="installationDate">تاريخ التركيب والتشغيل</label>
+        <input
+          id="installationDate"
+          type="date"
+          pInputText
+          class="w-full"
+          [(ngModel)]="currentItem.installationDate"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+          [max]="todayDate"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="operationalStatus">الحالة الفنية للجهاز*</label>
+        <p-select
+          [options]="operationalStatusList"
+          optionLabel="name"
+          optionValue="value"
+          class="w-full h-10!"
+          id="operationalStatus"
+          [(ngModel)]="currentItem.operationalStatus"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+        ></p-select>
+      </div>
+    }
+
+    @if (currentItem.itemType === 'supply') {
+      <div class="flex flex-col gap-2">
+        <label for="unit">وحدة القياس *</label>
+        <input
+          id="unit"
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="مثال: علبة، قطعة، لتر، كرتونة"
+          [(ngModel)]="currentItem.unit"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="quantity">الكمية الحالية</label>
+        <input
+          id="quantity"
+          type="number"
+          pInputText
+          class="w-full"
+          placeholder="0"
+          [(ngModel)]="currentItem.quantity"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="minimumStock">الحد الأدنى للمخزون</label>
+        <input
+          id="minimumStock"
+          type="number"
+          pInputText
+          class="w-full"
+          placeholder="0"
+          [(ngModel)]="currentItem.minimumStock"
+          [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+        />
+      </div>
+    }
+
+    <div class="flex flex-col gap-2">
+      <label for="supplierCompany">الشركة الموردة</label>
+      <input
+        id="supplierCompany"
+        type="text"
+        pInputText
+        class="w-full"
+        placeholder="الشركة الوكيلة للتوريد"
+        [(ngModel)]="currentItem.supplierCompany"
+        [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+      />
+    </div>
+
+    @if (currentItem.itemType === 'equipment') {
+      <div class="flex flex-col gap-2 col-span-3">
+        <label class="text-slate-800">صورة الجهاز الطبي (اختياري)</label>
+        <div class="flex items-center gap-4 border border-slate-300 p-2! rounded-2xl! bg-gray-50">
+          <div *ngIf="currentItem.itemImageBase64 || currentItem.itemImage" >
+            <img
+              [src]="currentItem.itemImageBase64 || getItemImageUrl(currentItem.itemImage)"
+              alt="Device Image Preview"
+              class="w-10 h-10 object-cover rounded-lg border border-slate-300"
+            />
+          </div>
+
+          <input
+            id="deviceImageUpload"
+            type="file"
+            accept="image/*"
+            (change)="onItemImageSelected($event)"
+            style="display: none"
+            #imageInput
+            [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+          />
+          <p-button
+            icon="pi pi-image"
+            [label]="currentItem.itemImageName || 'اختر صورة للجهاز'"
+            severity="secondary"
+            (click)="imageInput.click()"
+            styleClass="h-10!"
+            [disabled]="!surveyFacilityId() || !surveyDepartmentId()"
+          ></p-button>
+          @if (currentItem.itemImageBase64 || currentItem.itemImage) {
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              [rounded]="true"
+              [text]="true"
+              (click)="clearItemImage()"
+              class="bg-red-100 rounded-2xl"
+            ></p-button>
+          }
+        </div>
+        <small class="text-gray-500"
+          >يقبل صيغ الصور: PNG, JPG, JPEG, WEBP. الحد الأقصى للحجم: 5 ميجابايت.</small
+        >
+      </div>
+    }
+  </div>
+
+  <!-- Add Item Button -->
+  <div class="card flex justify-center mt-4!">
+    <button
+      pButton
+      class="w-full! h-12! bg-gray-100! border-dashed!"
+      [disabled]="isAddItemDisabled()"
+      (click)="addItem()"
+    >
+      <i class="pi pi-plus text-gray-700" pButtonIcon></i>
+      <span pButtonLabel class="text-gray-700">
+        {{
+          editingItemIndex !== null
+            ? 'تحديث العنصر في قائمة الدفعة'
+            : 'إدراج وإضافة العنصر للدفعة الحالية'
+        }}
+      </span>
+    </button>
+  </div>
+
+  <!-- Table of added items in memory -->
+  <div class="card mt-4!">
+    <p-table
+      [value]="surveyItems()"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [paginator]="true"
+      [rows]="10"
+      stripedRows
+    >
+      <ng-template #header>
+        <tr>
+          <th>النوع</th>
+          <th>صورة الجهاز</th>
+          <th>القسم الطبي</th>
+          <th>اسم العنصر</th>
+          <th>الموديل / الوحدة</th>
+          <th>التسلسلي / الكمية</th>
+          <th>المصنع</th>
+          <th>الحالة / الحد الأدنى</th>
+          <th>الاجراءات</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item let-i="rowIndex">
+        <tr>
+          <td>
+            <p-tag
+              [severity]="item.itemType === 'supply' ? 'success' : 'info'"
+              [value]="item.itemType === 'supply' ? 'مستلزم' : 'معدة'"
+            ></p-tag>
+          </td>
+          <td>
+            <img
+              *ngIf="item.itemImageBase64"
+              [src]="item.itemImageBase64"
+              alt="Device Image"
+              class="w-12 h-12 object-cover rounded-lg border border-slate-200"
+            />
+            <img
+              *ngIf="!item.itemImageBase64 && item.itemImage"
+              [src]="getItemImageUrl(item.itemImage)"
+              alt="Device Image"
+              class="w-12 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer hover:scale-110 transition-transform"
+              (click)="showLargeImage(item.itemImage)"
+            />
+            <span *ngIf="!item.itemImageBase64 && !item.itemImage" class="text-xs text-slate-400"
+              >لا توجد صورة</span
+            >
+          </td>
+          <td>{{ item.departmentName }}</td>
+          <td>
+            {{ item.scientificName }}
+          </td>
+          <td>{{ item.itemType === 'equipment' ? item.model : item.unit }}</td>
+          <td>
+            <code *ngIf="item.itemType === 'equipment'">{{ item.serialNumber }}</code>
+            <span *ngIf="item.itemType === 'supply'">{{ item.quantity }} {{ item.unit }}</span>
+          </td>
+          <td>{{ item.manufacturer || '-' }}</td>
+          <td>
+            <p-tag
+              *ngIf="item.itemType === 'equipment'"
+              [severity]="operationalStatusMap.get(item.operationalStatus)?.severity || 'secondary'"
+            >
+              {{
+                operationalStatusMap.get(item.operationalStatus)?.label || item.operationalStatus
+              }}
+            </p-tag>
+            <span *ngIf="item.itemType === 'supply'" class="text-sm text-gray-500">
+              حد أدنى: {{ item.minimumStock ?? 0 }}
+            </span>
+          </td>
+          <td>
+            <div class="flex flex-row gap-2">
+              <p-button icon="pi pi-pencil" (click)="editItem(i)" severity="secondary" rounded />
+              <p-button
+                icon="pi pi-trash"
+                (click)="deleteItemFromList(i)"
+                severity="danger"
+                rounded
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="text-center p-4">لم يتم إضافة عناصر لقائمة الدفعة الحالية بعد.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Save Button -->
+  <div class="card flex justify-center mt-4!">
+    <button
+      pButton
+      class="w-full! h-12!"
+      [disabled]="!surveyFacilityId() || surveyItems().length === 0"
+      (click)="saveSurvey()"
+    >
+      <i class="pi pi-check" pButtonIcon></i>
+      <span pButtonLabel>
+        {{
+          viewMode() === 'edit'
+            ? 'حفظ وتحديث عملية الحصر بالكامل'
+            : 'حفظ وتقديم عملية الحصر بالكامل'
+        }}
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- Delete Confirmation Dialog -->
+<p-dialog
+  [(visible)]="isDeleteConfirmOpen"
+  [modal]="true"
+  [style]="{ width: '35vw' }"
+  header="تأكيد حذف عملية الحصر"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="p-3">
+    <p class="font-semibold text-lg text-red-600 mb-2">تنبيه هام جدا!</p>
+    <p class="text-surface-700 dark:text-surface-300">
+      هل أنت متأكد من رغبتك في حذف عملية الحصر هذه بالكامل؟ سيؤدي ذلك إلى حذف جميع العناصر المدرجة
+      بها نهائيا. لا يمكن التراجع عن هذا الإجراء.
+    </p>
+    <div class="flex justify-end gap-3 mt-5">
+      <p-button
+        label="إلغاء الحذف"
+        severity="secondary"
+        (click)="isDeleteConfirmOpen = false"
+      ></p-button>
+      <p-button
+        label="نعم، احذف السجل"
+        severity="danger"
+        (click)="confirmDeleteSurvey()"
+      ></p-button>
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Add Stored Device Dialog -->
+<p-dialog
+  [(visible)]="isAddStoredDeviceDialogOpen"
+  [modal]="true"
+  [style]="{ width: '420px' }"
+  header="إضافة جهاز طبي جديد للنظام"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  [rtl]="true"
+>
+  <div class="p-fluid text-right" style="direction: rtl">
+    <div class="field mb-3">
+      <label class="block text-xs font-bold text-slate-700 mb-1"
+        >الاسم العلمي بالعربية (مطلوب)</label
+      >
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="newStoredDeviceArabic"
+        class="w-full h-10! border rounded p-2"
+        placeholder="مثال: جهاز الرنين المغناطيسي"
+      />
+    </div>
+    <div class="field mb-4">
+      <label class="block text-xs font-bold text-slate-700 mb-1"
+        >الاسم العلمي بالإنجليزية (مطلوب)</label
+      >
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="newStoredDeviceEnglish"
+        class="w-full h-10! border rounded p-2 text-left"
+        placeholder="Example: Magnetic Resonance Imaging (MRI)"
+      />
+    </div>
+    <div class="flex justify-end gap-3">
+      <p-button
+        label="إلغاء"
+        severity="secondary"
+        (click)="isAddStoredDeviceDialogOpen = false"
+        class="h-9!"
+      ></p-button>
+      <p-button
+        label="حفظ وإضافة"
+        severity="success"
+        icon="pi pi-check"
+        (click)="saveNewStoredDevice()"
+        [disabled]="!newStoredDeviceArabic.trim() || !newStoredDeviceEnglish.trim()"
+        class="h-9!"
+      ></p-button>
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Image Preview Dialog -->
+<p-dialog
+  [(visible)]="isImagePreviewOpen"
+  [modal]="true"
+  [style]="{ width: '40vw' }"
+  header="معاينة صورة الجهاز"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+>
+  <div class="flex justify-center p-2">
+    <img
+      [src]="previewImageUrl"
+      alt="Large Device Preview"
+      class="max-w-full max-h-[60vh] object-contain rounded-lg shadow-md"
+    />
+  </div>
+</p-dialog>

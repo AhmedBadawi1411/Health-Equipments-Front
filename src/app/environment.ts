@@ -1,5 +1,6 @@
 export const AppEnvironment = {
-  BASE_URL: 'http://localhost:5000/api/v1',
+  BASE_URL: '/api/v1',
+  // BASE_URL: 'http://localhost:5000/api/v1',
 };
 
 export const EndPoints = {
@@ -56,6 +57,10 @@ export const EndPoints = {
     ASSIGN_ROLE: (id: string) => `/users/${id}/role`,
     ASSIGN_PERMISSIONS: (id: string) => `/users/${id}/permissions`,
     ASSIGN_FACILITIES: (id: string) => `/users/${id}/facilities`,
+    ASSIGN_SIMPLE_FACILITIES: (id: string) => `/users/${id}/facilities`,
+  },
+  SIMPLE_SYSTEM: {
+    FACILITIES: '/facilities',
   },
   SUPPLIERS: {
     GET: '/suppliers',
@@ -86,6 +91,14 @@ export const EndPoints = {
   DASHBOARD: {
     GET: '/dashboard/metrics',
     LIVE: '/dashboard/live',
+  },
+  IMPORTS: {
+    VALIDATE: '/imports/validate',
+    CREATE: '/imports',
+    PENDING: '/imports/pending',
+    HISTORY: (facilityId: number) => `/imports/facility/${facilityId}`,
+    GET_ONE: (id: number) => `/imports/${id}`,
+    REVIEW: (id: number) => `/imports/${id}/review`,
   },
 };
 

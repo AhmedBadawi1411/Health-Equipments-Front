@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
 export class TextBoxWithLabel {
   @Input() label: string = 'البحث';
   @Input() icon: string = 'pi pi-search';
-  @Input() placeholder: string = "الرقم التسلسلي، الرقم التعريفي، الاسم ..." ;
+  @Input() placeholder: string = "" ;
 
   @Input() value: string = '';
   @Output() valueChange: EventEmitter<string> = new EventEmitter<string>();

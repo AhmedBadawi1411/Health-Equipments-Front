@@ -1,0 +1,1134 @@
+<p-toast position="bottom-right"></p-toast>
+
+<!-- Section Header changes based on viewMode -->
+<app-section-header
+  *ngIf="viewMode() === 'list'"
+  [showAddButton]="authService.hasPermission('request:create')"
+  actionLabel="إضافة طلب مستلزمات"
+  sectionTitle="إحتياج المستلزمات والمشغلات الطبية"
+  (onAddClickedEvent)="switchToCreate()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'create'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="إضافة طلب مستلزمات جديد"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'edit'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="تعديل طلب مستلزمات"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<app-section-header
+  *ngIf="viewMode() === 'detail'"
+  actionLabel="الرجوع للقائمة"
+  sectionTitle="تفاصيل طلب مستلزمات"
+  actionIcon="pi pi-arrow-left"
+  (onAddClickedEvent)="switchToList()"
+></app-section-header>
+
+<!-- LIST VIEW -->
+<div class="card mt-4!" *ngIf="viewMode() === 'list'">
+  <div class="filters-wrapper card-shadow flex flex-col gap-4 justify-center mb-4!">
+    <div class="flex flex-row w-full items-center gap-3">
+      <app-text-box-with-label
+        [(value)]="filterSearch"
+        label="البحث عن طريق مقدم الطلب أو القسم"
+      ></app-text-box-with-label>
+      <app-select-with-label
+        [(selectedItem)]="filterFacilityId"
+        [optionsList]="facilities"
+        optionValue="id"
+        optionLabel="facilityName"
+        [filter]="true"
+        filterBy="facilityName"
+        label="المرفق الصحي"
+        placeholder="اختر المرفق"
+      ></app-select-with-label>
+
+      <div class="pb-1!">
+        <p-button
+          icon="pi pi-refresh"
+          label=""
+          severity="secondary"
+          (click)="resetFilters()"
+          class="h-10!"
+        />
+      </div>
+    </div>
+
+          <!-- Filter Edit Requested (for Admin only) -->
+      <div class="pb-1!">
+        <label
+          class="text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer select-none"
+        >
+          <input
+            type="checkbox"
+            [(ngModel)]="filterEditRequested"
+            (change)="cdr.detectChanges()"
+            class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+          />
+          طلبات التعديل المعلقة فقط
+        </label>
+      </div>
+      </div>
+
+    <p-table
+      [value]="filteredRequests"
+      [tableStyle]="{ 'min-width': '60rem' }"
+      [paginator]="true"
+      [rows]="15"
+      [rowsPerPageOptions]="[10, 15, 30]"
+      stripedRows
+      [loading]="loading()"
+    >
+      <ng-template #caption>
+        <div class="flex flex-row justify-between items-center pb-4">
+          <span class="font-bold text-slate-700">قائمة طلبات احتياج المستلزمات</span>
+          <p-button
+            icon="pi pi-file-excel"
+            label="تصدير إلى Excel"
+            severity="success"
+            (click)="exportExcel()"
+          />
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <tr>
+          <th>رقم الطلب</th>
+          <th>المرفق الصحي</th>
+          <th>القسم الطبي</th>
+          <th>تاريخ التقديم</th>
+          <th>مقدم الطلب</th>
+          <th>حالة الاستلام</th>
+          <th class="text-center">عدد البنود المطلوبة</th>
+          <th class="w-48 text-center">الاجراءات</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td>
+            <code>#{{ item.id }}</code>
+          </td>
+          <td>{{ item.facility?.facilityName || 'غير معروف' }}</td>
+          <td>
+            <div class="flex flex-col gap-1 items-start">
+              <p-tag
+                severity="secondary"
+                [value]="item.department?.departmentName || 'غير معروف'"
+              ></p-tag>
+              <p-tag
+                *ngIf="item.isNewDepartment"
+                severity="info"
+                value="قسم جديد"
+              ></p-tag>
+            </div>
+          </td>
+          <td>{{ item.requestDate }}</td>
+          <td>
+            {{ item.requestedBy }}
+          </td>
+          <td>
+            <div class="flex flex-col gap-1 items-start">
+              <p-tag
+                [severity]="
+                  item.status === 'PENDING'
+                    ? 'warn'
+                    : item.status === 'APPROVED'
+                      ? 'success'
+                      : 'danger'
+                "
+                [value]="
+                  item.status === 'PENDING'
+                    ? 'بانتظار المراجعة'
+                    : item.status === 'APPROVED'
+                      ? 'مقبول ومُستلم'
+                      : 'مرفوض للتعديل'
+                "
+              ></p-tag>
+              <p-tag
+                *ngIf="item.editRequested"
+                severity="info"
+                value="مطلوب إذن تعديل"
+                class="animate-pulse"
+              ></p-tag>
+            </div>
+          </td>
+          <td class="text-center font-bold text-blue-600">{{ item.items?.length || 0 }} بنود</td>
+          <td>
+            <div class="flex flex-row gap-2 justify-center">
+              <p-button
+                icon="pi pi-eye"
+                (click)="viewDetail(item.id)"
+                severity="info"
+                rounded
+                label="عرض"
+              />
+              <p-button
+                *ngIf="authService.user()?.roleId === '1' || item.editAllowed"
+                icon="pi pi-pencil"
+                (click)="editRequest(item.id)"
+                severity="secondary"
+                rounded
+              />
+              <p-button
+                *ngIf="authService.hasPermission('request:delete')"
+                icon="pi pi-trash"
+                (click)="deleteRequest(item.id)"
+                severity="danger"
+                rounded
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7" class="text-center p-4">لا توجد طلبات مستلزمات مسجلة حاليا.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div class="card mt-4!" *ngIf="viewMode() === 'detail' && selectedRequest">
+    <div class="flex flex-row justify-between items-center mb-4 border-b pb-3 border-gray-100">
+      <div class="flex items-center gap-3">
+        <span class="text-xl font-bold">تفاصيل طلب الاحتياج رقم #{{ selectedRequest.id }}</span>
+        <p-tag
+          [severity]="
+            selectedRequest.status === 'PENDING'
+              ? 'warn'
+              : selectedRequest.status === 'APPROVED'
+                ? 'success'
+                : 'danger'
+          "
+          [value]="
+            selectedRequest.status === 'PENDING'
+              ? 'بانتظار المراجعة والاستلام'
+              : selectedRequest.status === 'APPROVED'
+                ? 'مقبول ومُستلم'
+                : 'مرفوض ويحتاج تعديل'
+          "
+        ></p-tag>
+      </div>
+
+      <!-- Admin Review Actions -->
+      <div class="flex items-center gap-2">
+        <!-- Edit Request Actions for Normal Users -->
+        <ng-container *ngIf="authService.user()?.roleId !== '1'">
+          <!-- Request Edit Button -->
+          <button
+            *ngIf="!selectedRequest.editRequested && !selectedRequest.editAllowed"
+            (click)="openEditRequestDialog()"
+            class="p-button h-9! px-4! bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-xl! inline-flex items-center gap-2 border-none cursor-pointer"
+          >
+            <i class="pi pi-file-edit"></i>
+            طلب تعديل البيانات
+          </button>
+
+          <!-- Edit Pending Status Tag -->
+          <p-tag
+            *ngIf="selectedRequest.editRequested"
+            severity="warn"
+            value="جاري مراجعة طلب التعديل"
+          ></p-tag>
+
+          <!-- Edit Allowed / Perform Edit Button -->
+          <button
+            *ngIf="selectedRequest.editAllowed"
+            (click)="editRequest(selectedRequest.id)"
+            class="p-button h-9! px-4! bg-orange-500 hover:bg-orange-600 text-white font-medium text-xs rounded-xl! inline-flex items-center gap-2 border-none cursor-pointer"
+          >
+            <i class="pi pi-pencil"></i>
+            بدء تعديل الطلب
+          </button>
+        </ng-container>
+
+        <!-- Admin Approve/Decline Edit Request Actions -->
+        <ng-container *ngIf="authService.user()?.roleId === '1' && selectedRequest.editRequested">
+          <div
+            class="flex items-center bg-blue-50 border border-blue-200 p-2! rounded-xl! gap-3"
+            style="direction: rtl"
+          >
+            <div class="text-xs text-blue-900 font-bold">
+              مطلوب تعديل: "{{ selectedRequest.editReason }}"
+            </div>
+            <div class="flex gap-2">
+              <button
+                (click)="respondEditRequest('approve')"
+                class="h-8! px-3! bg-green-600 text-white text-xs font-semibold rounded cursor-pointer border-none"
+              >
+                موافقة
+              </button>
+              <button
+                (click)="respondEditRequest('decline')"
+                class="h-8! px-3! bg-red-600 text-white text-xs font-semibold rounded cursor-pointer border-none"
+              >
+                رفض
+              </button>
+            </div>
+          </div>
+        </ng-container>
+
+        <div *ngIf="authService.user()?.roleId === '1'" class="flex gap-2">
+          <button
+            (click)="openReviewDialog('APPROVED')"
+            [disabled]="selectedRequest.status === 'APPROVED'"
+            [style.opacity]="selectedRequest.status === 'APPROVED' ? '0.6' : '1'"
+            [style.cursor]="selectedRequest.status === 'APPROVED' ? 'not-allowed' : 'pointer'"
+            class="btn-action-success"
+            style="
+              background-color: #10b981;
+              color: white;
+              border: none;
+              border-radius: 16px;
+              padding: 8px 16px;
+              font-weight: 00;
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+            "
+          >
+            <i class="pi pi-check-circle"></i>
+            استلام الطلب
+          </button>
+          <button
+            (click)="openReviewDialog('REJECTED')"
+            [disabled]="selectedRequest.status === 'REJECTED'"
+            [style.opacity]="selectedRequest.status === 'REJECTED' ? '0.6' : '1'"
+            [style.cursor]="selectedRequest.status === 'REJECTED' ? 'not-allowed' : 'pointer'"
+            class="btn-action-danger"
+            style="
+              background-color: #ef4444;
+              color: white;
+              border: none;
+              border-radius: 16px;
+              padding: 8px 16px;
+              font-weight: 500;
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+            "
+          >
+            <i class="pi pi-times-circle"></i>
+            رفض وإرجاع الطلب
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      *ngIf="selectedRequest.editDeclinedReason"
+      class="border border-red-300 bg-red-50  rounded-2xl! p-3! flex flex-col gap-1 mb-4! mt-2!"
+      style="direction: rtl; text-align: right"
+    >
+      <p class="text-red-800 font-bold text-xs">تم رفض طلب التعديل السابق من المسؤول:</p>
+      <span class="text-gray-700 text-xs">{{ selectedRequest.editDeclinedReason }}</span>
+    </div>
+
+    <!-- Warning for normal users if rejected -->
+    <!-- <div *ngIf="selectedRequest.status === 'REJECTED' && reviewNotesHistory.length > 0" class="bg-red-50 border border-red-200 p-4 rounded-xl! text-red-800 mb-6" style="direction: rtl;">
+    <h4 class="font-bold mb-2 flex items-center gap-2 text-sm text-red-700">
+      <i class="pi pi-exclamation-triangle"></i>
+      ملاحظات المسؤول وسبب رفض الطلب:
+    </h4>
+    <div class="flex flex-col gap-2">
+      <div *ngFor="let note of reviewNotesHistory" class="p-2 bg-white rounded border border-red-100 text-xs">
+        <strong class="text-red-700">{{ note.userName }} ({{ formatDate(note.createdAt) }}):
+        <span class="text-gray-700 block mt-1">{{ note.note }}</span>
+      </div>
+    </div>
+  </div> -->
+
+    @if (reviewNotesHistory.length > 0) {
+      <div
+        class="border border-amber-200 mt-6! bg-[#FFFBEB] border-r-4 border-r-amber-500 rounded-xl! p-4! flex flex-col gap-2"
+      >
+        <p class="text-amber-800 font-semibold text-lg">ملاحظات المراجعة وإرشادات المسؤول</p>
+        @for (note of reviewNotesHistory; track $index) {
+          <div class="wrapper bg-[#FFFDF5] border border-amber-200 p-4! rounded">
+            <div class="flex flex-row justify-between align-middle items-center">
+              <p class="text-amber-700 font-medium text-md">{{ note.userName }}</p>
+              <span class="text-gray-500 block mt-1 text-sm">{{
+                note.createdAt | date: 'medium'
+              }}</span>
+            </div>
+            <span class="text-gray-600 block mt-1 text-sm">{{ note.note }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <!-- Left Column: Request items table -->
+      <div class="lg:col-span-3">
+        <div
+          class="grid card-shadow grid-cols-1 md:grid-cols-5 gap-4 p-4! rounded-xl! border border-slate-300 mt-6! bg-white mb-6!"
+        >
+          <div>
+            <span class="text-gray-500 block text-xs">المرفق الصحي:</span>
+            {{ selectedRequest.facility?.facilityName }}
+          </div>
+          <div>
+            <span class="text-gray-500 block text-xs">القسم المستفيد:</span>
+            <div class="flex flex-col gap-1 items-start">
+              <p-tag
+                severity="secondary"
+                [value]="selectedRequest.department?.departmentName"
+              ></p-tag>
+              <p-tag
+                *ngIf="selectedRequest.isNewDepartment"
+                severity="info"
+                value="قسم جديد"
+              ></p-tag>
+            </div>
+          </div>
+          <div>
+            <span class="text-gray-500 block text-xs">تاريخ التقديم:</span>
+            {{ selectedRequest.requestDate }}
+          </div>
+          <div>
+            <span class="text-gray-500 block text-xs">مقدم الطلب:</span>
+            {{ selectedRequest.requestedBy }}
+          </div>
+          <div>
+            <span class="text-gray-500 block text-xs">المستند المرفق:</span>
+            @if (selectedRequest.pdfPath) {
+              <p-button
+                icon="pi pi-file-pdf"
+                label="تحميل/طباعة"
+                [text]="true"
+                severity="danger"
+                (click)="downloadPdf(selectedRequest)"
+                styleClass="p-0 h-6! text-xs!"
+              ></p-button>
+            } @else {
+              <span class="text-xs text-gray-400">لا يوجد ملف مرفق</span>
+            }
+          </div>
+        </div>
+
+        <div class="font-bold text-lg text-surface-900 mb-3">تفاصيل المستلزمات الطبية المطلوبة</div>
+
+        <p-table
+          class="card-shadow"
+          [value]="selectedRequest.items || []"
+          [tableStyle]="{ 'min-width': '100%' }"
+          [paginator]="true"
+          [rows]="15"
+          stripedRows
+        >
+          <ng-template #caption>
+            <div class="flex flex-row justify-between items-center pb-4">
+              <span class="font-bold text-slate-700">بنود طلب الاحتياج الحالي</span>
+              <p-button
+                icon="pi pi-file-excel"
+                label="تصدير العناصر إلى Excel"
+                severity="success"
+                (click)="exportRequestItemsExcel()"
+              />
+            </div>
+          </ng-template>
+          <ng-template #header>
+            <tr>
+              <th>الاسم العلمي للمستلزم المطلوب</th>
+              <th>الكمية المطلوبة</th>
+              <th>الكمية الحالية بالقسم</th>
+              <th>تدريب الكادر الفني</th>
+              <th>جاهزية البنية التحتية</th>
+              <th>المبررات والمسوغات الفنية</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-item>
+            <tr>
+              <td>
+                {{ item.scientificName }}
+              </td>
+              <td class="text-center font-bold text-blue-600">{{ item.requiredQuantity }}</td>
+              <td class="text-center">{{ item.currentQuantity }}</td>
+              <td>{{ item.qualifiedStaff }}</td>
+              <td>{{ item.infrastructureSpace }}</td>
+              <td>{{ item.justifications }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="6" class="text-center p-4">لا توجد بنود مسجلة في هذا الطلب.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Right Column: Lifecycle log timeline & Edit History -->
+      <div class="lg:col-span-1 flex flex-col gap-4">
+        <div
+          class="bg-slate-50 p-4! rounded-xl! border border-slate-200 mt-6! card-shadow"
+          style="direction: rtl"
+        >
+          <h3
+            class="font-semibold text-slate-800 mb-3! flex items-center gap-2 text-sm border-b pb-2!"
+          >
+            <i class="pi pi-clock text-blue-600"></i>
+            سجل حركات وإجراءات الطلب
+          </h3>
+
+          <div *ngIf="lifecycleLogs.length === 0" class="text-gray-400 text-xs text-center py-4">
+            لا يوجد حركات مسجلة للطلب بعد
+          </div>
+
+          <div class="flex flex-col gap-3 max-h-80 overflow-y-auto">
+            <div
+              *ngFor="let log of lifecycleLogs"
+              class="p-2! rounded border border-slate-100 shadow-sm text-xs"
+              [ngClass]="{
+                'bg-green-50 border-green-100': log.action === 'CREATE',
+                'bg-blue-50 border-blue-100': log.action === 'UPDATE',
+                'bg-red-50 border-red-100': log.action === 'DELETE',
+                'bg-amber-50 border-amber-100': !['CREATE', 'UPDATE', 'DELETE'].includes(
+                  log.action
+                ),
+              }"
+            >
+              <div class="flex justify-between font-semibold text-slate-700 mb-1">
+                <span>{{
+                  log.action === 'CREATE'
+                    ? 'إنشاء طلب'
+                    : log.action === 'UPDATE'
+                      ? 'تعديل طلب'
+                      : log.action === 'DELETE'
+                        ? 'حذف طلب'
+                        : 'تعديل حالة الاستلام'
+                }}</span>
+              </div>
+              <p class="text-gray-500 text-[11px] mb-1 overflow-hidden">{{ log.details }}</p>
+              <p class="text-gray-600">بواسطة: {{ log.userName }}</p>
+              <p class="text-gray-400 text-[11px] mb-1">{{ log.createdAt | date: 'medium' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit History Timeline -->
+        <div
+          class="bg-slate-50 p-4! rounded-xl! border border-slate-200"
+          style="direction: rtl"
+          *ngIf="editHistory && editHistory.length > 0"
+        >
+          <h3
+            class="font-semibold text-slate-800 mb-3! flex items-center gap-2 text-sm border-b pb-2!"
+          >
+            <i class="pi pi-history text-orange-600"></i>
+            سجل تعديلات طلب الاحتياج
+          </h3>
+
+          <div class="flex flex-col gap-3 max-h-80 overflow-y-auto">
+            <div
+              *ngFor="let hist of editHistory"
+              class="p-2.5 bg-orange-50/50 border border-orange-100 rounded text-xs flex flex-col gap-1.5 shadow-sm"
+            >
+              <div class="flex justify-between font-bold text-slate-700">
+                <span>نسخة احتياطية قبل التعديل</span>
+                <span class="text-[10px] text-gray-400 font-mono">{{
+                  hist.createdAt | date: 'short'
+                }}</span>
+              </div>
+              <div class="text-[11px] text-gray-500">بواسطة: {{ hist.userName }}</div>
+              <div
+                class="border-t border-dashed border-orange-200 pt-1.5 mt-1 flex flex-col gap-1 font-mono text-[10px]"
+              >
+                <div *ngFor="let item of hist.snapshot" class="flex justify-between text-gray-600">
+                  <span>{{ item.scientificName }}</span>
+                  <span
+                    >مطلوب: {{ item.requiredQuantity }} (متوفر: {{ item.currentQuantity }})</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE / EDIT VIEW -->
+  <div *ngIf="viewMode() === 'create' || viewMode() === 'edit'">
+    <!-- Master Fields Selector -->
+    <div class="form-wrapper">
+      <div class="flex flex-col gap-2">
+        <label for="surveyFacilityId">المرفق الصحي *</label>
+        <p-select
+          [options]="facilities"
+          optionLabel="facilityName"
+          optionValue="id"
+          [filter]="true"
+          filterBy="facilityName"
+          [showClear]="true"
+          placeholder="إختر المرفق الصحي"
+          class="w-full h-10!"
+          id="surveyFacilityId"
+          [ngModel]="selectedFacilityId()"
+          (ngModelChange)="onFacilityChange($event)"
+          [disabled]="viewMode() === 'edit' || requestItems().length > 0"
+        ></p-select>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="itemDeptId">القسم / العيادة المستفيدة *</label>
+        <p-select
+          [options]="departments"
+          optionLabel="departmentName"
+          optionValue="id"
+          [filter]="true"
+          filterBy="departmentName"
+          [showClear]="true"
+          placeholder="{{ selectedFacilityId() ? 'إختر القسم الطبي' : 'يجب إختر المرفق أولا' }}"
+          class="w-full h-10!"
+          id="itemDeptId"
+          [(ngModel)]="selectedDepartmentId"
+          [disabled]="!selectedFacilityId() || viewMode() === 'edit' || requestItems().length > 0"
+        ></p-select>
+
+        <div class="flex items-center gap-2 mt-1.5" *ngIf="viewMode() !== 'edit'">
+          <input
+            type="checkbox"
+            id="isNewDepartment"
+            [(ngModel)]="isNewDepartment"
+            [disabled]="requestItems().length > 0"
+            class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+          />
+          <label for="isNewDepartment" class="text-xs font-bold text-slate-700 cursor-pointer select-none">
+            هل هذا القسم جديد في المرفق الصحي؟ (لا توجد أجهزة حالية لحصرها)
+          </label>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="requestedBy">مقدم ومسؤول الطلب *</label>
+        <input
+          id="requestedBy"
+          type="text"
+          pInputText
+          class="w-full"
+          placeholder="اسم مقدم الطلب"
+          [(ngModel)]="requestedBy"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="requestDate">تاريخ الطلب *</label>
+        <input
+          id="requestDate"
+          type="date"
+          pInputText
+          class="w-full"
+          [(ngModel)]="requestDate"
+          [disabled]="true"
+        />
+      </div>
+
+      <div class="flex flex-col gap-2 col-span-3">
+        <label for="pdfUpload" class="font-semibold">إرفاق طلب الاحتياج (ملف PDF واحد فقط) *</label>
+        <div class="flex items-center gap-4 border p-2 rounded-xl! bg-gray-50">
+          <input
+            id="pdfUpload"
+            type="file"
+            accept="application/pdf"
+            (change)="onPdfSelected($event)"
+            style="display: none"
+            #pdfInput
+          />
+          <p-button
+            icon="pi pi-upload"
+            [label]="selectedPdfName || 'اختر ملف PDF لتوقيع الطلب'"
+            severity="secondary"
+            (click)="pdfInput.click()"
+            styleClass="h-10!"
+          ></p-button>
+          <span
+            *ngIf="selectedPdfName"
+            class="text-sm text-green-600 flex items-center gap-1 font-medium"
+          >
+            <i class="pi pi-check-circle"></i> تم تحديد الملف بنجاح
+          </span>
+          <p-button
+            *ngIf="selectedPdfName"
+            icon="pi pi-trash"
+            severity="danger"
+            [rounded]="true"
+            [text]="true"
+            (click)="clearSelectedPdf()"
+          ></p-button>
+          <p-button
+            *ngIf="viewMode() === 'edit' && selectedRequest?.pdfPath"
+            icon="pi pi-file-pdf"
+            label="تحميل المرفق القديم"
+            severity="info"
+            [text]="true"
+            (click)="downloadPdf(selectedRequest)"
+          ></p-button>
+        </div>
+        <small class="text-gray-500"
+          >حجم الملف الأقصى: 5 ميجابايت. يُقبل فقط امتداد PDF حقيقي وموثق.</small
+        >
+      </div>
+    </div>
+
+    <!-- Detail Need Section -->
+    <div class="font-bold text-xl text-surface-900 dark:text-surface-0 mt-6! mb-2! px-4!">
+      تفاصيل المستلزمات والمشغلات الطبية المطلوبة
+    </div>
+
+    <div class="form-wrapper mt-2!">
+      <!-- 1. Scientific Name -->
+      <div class="flex flex-col gap-2">
+        <label for="scientificName">الاسم العلمي للمستلزم المطلوب *</label>
+        <p-iconfield class="w-full">
+          <input
+            id="scientificName"
+            type="text"
+            pInputText
+            class="w-full"
+            placeholder="مثال: فلاتر أجهزة تنفس هيبا HEPA"
+            [(ngModel)]="currentItem.scientificName"
+            [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+          />
+          <p-inputicon class="pi pi-info-circle" />
+        </p-iconfield>
+      </div>
+
+      <!-- 2. Required Quantity -->
+      <div class="flex flex-col gap-2">
+        <label for="requiredQuantity">الكمية المطلوبة *</label>
+        <input
+          id="requiredQuantity"
+          type="number"
+          pInputText
+          class="w-full"
+          min="1"
+          [(ngModel)]="currentItem.requiredQuantity"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        />
+      </div>
+
+      <!-- 3. Current Quantity -->
+      <div class="flex flex-col gap-2">
+        <label for="currentQuantity">الكمية المتوفرة حاليا بالقسم</label>
+        <input
+          id="currentQuantity"
+          type="number"
+          pInputText
+          class="w-full"
+          min="0"
+          [(ngModel)]="currentItem.currentQuantity"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        />
+      </div>
+
+      <!-- 4. Staffing status -->
+      <div class="flex flex-col gap-2">
+        <label for="qualifiedStaff">تدريب وتأهيل الكادر لاستعماله بالقسم *</label>
+        <p-select
+          [options]="staffOptions"
+          optionLabel="name"
+          optionValue="value"
+          class="w-full h-10!"
+          id="qualifiedStaff"
+          [(ngModel)]="currentItem.qualifiedStaff"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        ></p-select>
+      </div>
+
+      <!-- 5. Space readiness -->
+      <div class="flex flex-col gap-2 col-span-2">
+        <label for="infrastructureSpace">جاهزية مساحات التخزين المهيأة للمستلزم *</label>
+        <p-select
+          [options]="infrastructureOptions"
+          optionLabel="name"
+          optionValue="value"
+          class="w-full h-10!"
+          id="infrastructureSpace"
+          [(ngModel)]="currentItem.infrastructureSpace"
+          [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+        ></p-select>
+      </div>
+
+      <!-- 6. Justifications -->
+      <div class="flex flex-col gap-2 col-span-2">
+        <label for="justifications">المبررات والمسوغات للطلب *</label>
+        <p-iconfield class="w-full">
+          <input
+            id="justifications"
+            type="text"
+            pInputText
+            class="w-full"
+            placeholder="مثال: تشغيل عيادة العيون أو نفاذ المخزون الدوري"
+            [(ngModel)]="currentItem.justifications"
+            [disabled]="!selectedFacilityId() || !selectedDepartmentId"
+          />
+          <p-inputicon class="pi pi-file-edit" />
+        </p-iconfield>
+      </div>
+    </div>
+
+    <!-- Add Item button -->
+    <div class="card flex justify-center mt-4!">
+      <button
+        pButton
+        class="w-full! h-12! bg-gray-100! border-dashed!"
+        [disabled]="
+          !selectedFacilityId() ||
+          !selectedDepartmentId ||
+          !currentItem.scientificName ||
+          !currentItem.requiredQuantity ||
+          !currentItem.justifications
+        "
+        (click)="addItem()"
+      >
+        <i class="pi pi-plus text-gray-700" pButtonIcon></i>
+        <span pButtonLabel class="text-gray-700">
+          {{
+            editingItemIndex !== null
+              ? 'تحديث بند المستلزم في القائمة'
+              : 'إدراج وإضافة البند للدفعة الحالية'
+          }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Table of added items in memory -->
+    <div class="card mt-4!">
+      <p-table
+        [value]="requestItems()"
+        [tableStyle]="{ 'min-width': '50rem' }"
+        [paginator]="true"
+        [rows]="10"
+        stripedRows
+      >
+        <ng-template #header>
+          <tr>
+            <th>اسم المستلزم المطلوب</th>
+            <th>الكمية المطلوبة</th>
+            <th>الكمية الحالية</th>
+            <th>الكادر الفني</th>
+            <th>المرافق والبنية</th>
+            <th>المبررات والمسوغات</th>
+            <th>الاجراءات</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-item let-i="rowIndex">
+          <tr>
+            <td>
+              {{ item.scientificName }}
+            </td>
+            <td class="text-center font-bold text-blue-600">{{ item.requiredQuantity }}</td>
+            <td class="text-center">{{ item.currentQuantity }}</td>
+            <td>{{ item.qualifiedStaff }}</td>
+            <td>{{ item.infrastructureSpace }}</td>
+            <td>{{ item.justifications }}</td>
+            <td>
+              <div class="flex flex-row gap-2">
+                <p-button icon="pi pi-pencil" (click)="editItem(i)" severity="secondary" rounded />
+                <p-button
+                  icon="pi pi-trash"
+                  (click)="deleteItemFromList(i)"
+                  severity="danger"
+                  rounded
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="7" class="text-center p-4">
+              لم يتم إضافة بنود طلب مستلزمات للدفعة الحالية.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- Submit entire request button -->
+    <div class="card flex justify-center mt-4!">
+      <button
+        pButton
+        class="w-full! h-12!"
+        [disabled]="!selectedFacilityId() || !selectedDepartmentId || requestItems().length === 0"
+        (click)="saveRequest()"
+      >
+        <i class="pi pi-check" pButtonIcon></i>
+        <span pButtonLabel>
+          {{
+            viewMode() === 'edit'
+              ? 'حفظ وتعديل طلب المستلزمات بالكامل'
+              : 'حفظ وتقديم طلب المستلزمات بالكامل'
+          }}
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Custom Delete Confirmation Modal Dialog -->
+  <p-dialog
+    [(visible)]="isDeleteConfirmOpen"
+    [modal]="true"
+    [style]="{ width: '35vw' }"
+    header="تأكيد حذف طلب المستلزمات"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <div class="p-3">
+      <p class="font-semibold text-lg text-red-600 mb-2">تنبيه هام جدا!</p>
+      <p class="text-surface-700 dark:text-surface-300">
+        هل أنت متأكد من رغبتك في حذف طلب المستلزمات هذا بالكامل؟ سيؤدي ذلك إلى مسحه من المنظومة
+        نهائيا. لا يمكن التراجع عن هذا الإجراء.
+      </p>
+      <div class="flex justify-end gap-3 mt-5">
+        <p-button
+          label="إلغاء الحذف"
+          severity="secondary"
+          (click)="isDeleteConfirmOpen = false"
+        ></p-button>
+        <p-button
+          label="نعم، احذف الطلب"
+          severity="danger"
+          (click)="confirmDeleteRequest()"
+        ></p-button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- Inventory Approved Warning Modal Dialog -->
+  <p-dialog
+    [(visible)]="isInventoryWarningOpen"
+    [modal]="true"
+    [style]="{ width: '450px' }"
+    header="تنبيه هام"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="false"
+  >
+    <div class="p-4 text-center">
+      <div class="flex justify-center mb-4">
+        <div
+          class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center dark:bg-amber-950/30"
+        >
+          <i class="pi pi-exclamation-triangle text-amber-500 text-3xl"></i>
+        </div>
+      </div>
+      <p class="text-surface-700 dark:text-surface-300 text-base leading-relaxed mb-6 font-medium">
+        {{ inventoryWarningMessage }}
+      </p>
+      <div class="flex justify-center">
+        <p-button
+          label="الذهاب لإجراء الحصر"
+          icon="pi pi-arrow-left"
+          severity="warn"
+          (click)="onWarningConfirm()"
+          [style]="{ width: '100%' }"
+        ></p-button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- Need Request Review Dialog -->
+  <p-dialog
+    [(visible)]="isReviewDialogOpen"
+    [modal]="true"
+    [style]="{ width: '450px' }"
+    [header]="reviewStatus === 'APPROVED' ? 'استلام طلب الاحتياج' : 'رفض وإرجاع الطلب للتعديل'"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+  >
+    <div class="p-fluid" style="direction: rtl">
+      <div class="field mb-4">
+        <label class="block font-medium text-gray-700 mb-2">
+          {{
+            reviewStatus === 'APPROVED'
+              ? 'ملاحظات وتوجيهات الاستلام (اختياري)'
+              : 'ملاحظات المراجعة الفنية وأسباب الرفض (مطلوب)'
+          }}
+        </label>
+        <textarea
+          rows="5"
+          cols="30"
+          [(ngModel)]="reviewNotes"
+          style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px"
+          [placeholder]="
+            reviewStatus === 'APPROVED'
+              ? 'اكتب أي ملاحظات إضافية بخصوص استلام هذا الطلب...'
+              : 'يرجى كتابة الملاحظات بالتفصيل لتوضيح الأخطاء للقسم ليقوم بتعديلها وإعادة التقديم...'
+          "
+        ></textarea>
+      </div>
+      <div class="flex justify-end gap-3">
+        <p-button
+          label="إلغاء"
+          severity="secondary"
+          (click)="isReviewDialogOpen = false"
+        ></p-button>
+        <p-button
+          [label]="reviewStatus === 'APPROVED' ? 'تأكيد الاستلام' : 'إرسال الملاحظات والرفض'"
+          [severity]="reviewStatus === 'APPROVED' ? 'success' : 'danger'"
+          (click)="confirmReview()"
+        ></p-button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- Edit Request Dialog -->
+  <p-dialog
+    [(visible)]="isEditRequestDialogOpen"
+    [modal]="true"
+    [style]="{ width: '450px' }"
+    header="طلب تعديل البيانات"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+  >
+    <div class="p-fluid" style="direction: rtl">
+      <div class="field mb-4">
+        <label class="block font-medium text-gray-700 mb-2">سبب طلب التعديل (مطلوب)</label>
+        <textarea
+          rows="4"
+          [(ngModel)]="editReasonInput"
+          style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px"
+          placeholder="يرجى كتابة سبب طلب التعديل بالتفصيل لتتم مراجعته من قبل المسؤول..."
+        ></textarea>
+      </div>
+      <div class="flex justify-end gap-3">
+        <p-button
+          label="إلغاء"
+          severity="secondary"
+          (click)="isEditRequestDialogOpen = false"
+        ></p-button>
+        <p-button
+          label="إرسال طلب التعديل"
+          severity="info"
+          (click)="submitEditRequest()"
+        ></p-button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- Decline Edit Request Dialog -->
+  <p-dialog
+    [(visible)]="isDeclineRequestDialogOpen"
+    [modal]="true"
+    [style]="{ width: '450px' }"
+    header="رفض طلب التعديل"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+  >
+    <div class="p-fluid" style="direction: rtl">
+      <div class="field mb-4">
+        <label class="block font-medium text-gray-700 mb-2">سبب الرفض (مطلوب)</label>
+        <textarea
+          rows="4"
+          [(ngModel)]="declineReasonInput"
+          style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px"
+          placeholder="يرجى توضيح سبب رفض فتح التعديل..."
+        ></textarea>
+      </div>
+      <div class="flex justify-end gap-3">
+        <p-button
+          label="إلغاء"
+          severity="secondary"
+          (click)="isDeclineRequestDialogOpen = false"
+        ></p-button>
+        <p-button
+          label="تأكيد الرفض"
+          severity="danger"
+          (click)="respondEditRequest('decline')"
+        ></p-button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- Inventory Mismatch Warning Dialog -->
+  <p-dialog
+    [(visible)]="isInventoryMismatchOpen"
+    [modal]="true"
+    [style]="{ width: '480px' }"
+    header="تنبيه مطابقة الحصر"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+    [rtl]="true"
+  >
+    <div class="p-fluid text-right" style="direction: rtl">
+      <div class="flex items-center gap-3 text-red-600 mb-3 font-bold">
+        <i class="pi pi-exclamation-triangle text-2xl"></i>
+        <span>الكميات المدخلة غير متطابقة مع الحصر</span>
+      </div>
+      <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+        لقد قمت بإدخال كميات متوفرة لبعض البنود ولكنها غير مسجلة بالكامل في حصر القسم الطبي الحالي.
+        تفاصيل البنود غير المطابقة:
+      </p>
+      <ul
+        class="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl! border border-slate-200 mb-4 list-disc pr-5 leading-relaxed"
+      >
+        <li *ngFor="let m of mismatchItems" class="mb-1">
+          الاسم العلمي: {{ m.name }} - الكمية المدخلة:
+          <span class="text-blue-600 font-bold">{{ m.entered }}</span> (المسجل بالحصر:
+          <span class="text-red-500 font-bold">{{ m.available }}</span
+          >)
+        </li>
+      </ul>
+      <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+        يرجى تحديث سجل الحصر لهذا القسم أولاً لإضافة المستلزمات، أو الضغط على الزر أدناه للانتقال
+        وتعديل الحصر أو إنشاء سجل حصر جديد للقسم.
+      </p>
+      <div class="flex justify-end gap-3 mt-4">
+        <p-button
+          label="إلغاء"
+          severity="secondary"
+          (click)="isInventoryMismatchOpen = false"
+          class="h-9!"
+        ></p-button>
+        <p-button
+          label="الانتقال لتعديل/إنشاء الحصر"
+          severity="danger"
+          icon="pi pi-external-link"
+          (click)="navigateToInventorySurvey()"
+          class="h-9!"
+        ></p-button>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- Admin Review Dialog -->
+  <p-dialog
+    [(visible)]="isAdminReviewOpen"
+    [modal]="true"
+    [style]="{ width: '35vw' }"
+    header="تم إسال الطلب بنجاح"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="false"
+    [rtl]="true"
+  >
+    <div class="p-3 text-center" style="direction: rtl">
+      <i class="pi pi-info-circle text-blue-500 text-5xl mb-4 block"></i>
+      <p class="font-semibold text-lg text-slate-800 mb-2">طلب الاحتياج قيد المراجعة</p>
+      <p class="text-slate-600 text-sm">
+        {{ adminReviewMessage || 'نظرًا لأن هذا القسم جديد، فقد تم إرسال طلب الاحتياج مباشرة إلى الإدارة للمراجعة والتدقيق.' }}
+      </p>
+      <div class="flex justify-center mt-5">
+        <p-button
+          label="موافق"
+          severity="info"
+          (click)="onAdminReviewConfirm()"
+          class="h-9!"
+        ></p-button>
+      </div>
+    </div>
+  </p-dialog>

@@ -14,16 +14,25 @@ export interface IRecentActivity {
   type: string;
 }
 
+export interface IKpiInfo {
+  value: number;
+  trend: string;
+  trendUp: boolean;
+}
+
 export interface IDashboardMetrics {
   kpis: {
-    totalFacilities: number;
-    totalAssets: number;
-    needRequests: number;
-    inventoryCampaigns: number;
+    totalFacilities: IKpiInfo;
+    totalAssets: IKpiInfo;
+    needRequests: IKpiInfo;
+    equipmentNeedRequests: IKpiInfo;
+    consumablesNeedRequests: IKpiInfo;
+    inventoryCampaigns: IKpiInfo;
   };
   barChartData: { label: string; value: number }[];
   inventoryDistribution: { name: string; value: number; color: string }[];
-  monthlyNeedRequests: { month: string; count: number }[];
+  inventoryStatusDistribution?: { name: string; value: number; color: string }[];
+  monthlyNeedRequests: { month: string; count: number; equipmentCount?: number; consumablesCount?: number }[];
   overallAssetAvailability: number;
   recentActivities: IRecentActivity[];
 }
@@ -34,7 +43,7 @@ export interface IDashboardMetrics {
 export class DashboardService {
   constructor(private readonly http: HttpClientWrapper) {}
 
-  getMetrics(regionId?: number, facilityId?: number): Observable<ApiResponse<IDashboardMetrics>> {
+  getMetrics(regionId?: string | number, facilityId?: number): Observable<ApiResponse<IDashboardMetrics>> {
     const params: Record<string, string> = {};
     if (regionId) params['regionId'] = regionId.toString();
     if (facilityId) params['facilityId'] = facilityId.toString();
@@ -45,13 +54,17 @@ export class DashboardService {
     );
   }
 
-  getLiveUpdates(regionId?: number, facilityId?: number): Observable<IDashboardMetrics> {
+  getLiveUpdates(regionId?: string | number, facilityId?: number): Observable<IDashboardMetrics> {
     return new Observable<IDashboardMetrics>((subscriber) => {
-      const url = new URL(AppEnvironment.BASE_URL + EndPoints.DASHBOARD.LIVE);
+      const basePath = AppEnvironment.BASE_URL + EndPoints.DASHBOARD.LIVE;
+      const url = basePath.startsWith('http://') || basePath.startsWith('https://')
+        ? new URL(basePath)
+        : new URL(basePath, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+
       if (regionId) url.searchParams.append('regionId', regionId.toString());
       if (facilityId) url.searchParams.append('facilityId', facilityId.toString());
 
-      const eventSource = new EventSource(url.toString());
+      const eventSource = new EventSource(url.toString(), {withCredentials:true});
 
       eventSource.onmessage = (event) => {
         try {

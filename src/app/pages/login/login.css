@@ -1,7 +1,7 @@
 .icon-wrapper {
-        width: 44px;
-        height: 44px;
-        background-color: var(--k-primary-300);
+        width: 100px;
+        height: 100px;
+        /* background-color: var(--k-primary-300);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -9,7 +9,7 @@
         -webkit-border-radius: 4px;
         -moz-border-radius: 4px;
         -ms-border-radius: 4px;
-        -o-border-radius: 4px;
+        -o-border-radius: 4px; */
 }
 
 .page-wrapper {

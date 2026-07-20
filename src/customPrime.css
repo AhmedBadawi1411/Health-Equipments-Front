@@ -2,3 +2,9 @@
         font-size: .8rem !important;
         text-align: center;
 }
+
+.p-component.p-tag {
+        font-size: .8rem !important;
+        text-align: center !important;
+        font-weight: 500 !important;
+}

@@ -1,0 +1,690 @@
+<p-toast position="bottom-right"></p-toast>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SECTION HEADER                                                          -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<app-section-header
+  [showAddButton]="false"
+  sectionTitle="استيراد بيانات الحصر من Excel"
+></app-section-header>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- TOP: FACILITY SELECTOR + STEP INDICATOR                                 -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="card mt-4!" dir="rtl">
+  <div class="flex flex-row gap-6 items-center flex-wrap">
+    <!-- Facility Dropdown -->
+    <div class="flex-1 min-w-50 filters-wrapper mb-4!">
+      <app-select-with-label
+        [(selectedItem)]="selectedFacilityId"
+        [optionsList]="facilities"
+        optionValue="id"
+        optionLabel="facilityName"
+        [filter]="true"
+        filterBy="facilityName"
+        label="المرفق الصحي"
+        placeholder="اختر المرفق"
+        (selectedItemChange)="onFacilityChanged()"
+      ></app-select-with-label>
+    </div>
+
+    <!-- Step Indicator -->
+  </div>
+  <div class="flex items-center gap-2 flex-wrap" *ngIf="selectedFacilityId">
+    <div class="flex items-center gap-2" *ngFor="let step of [1, 2, 3]; let i = index">
+      <div
+        class="step-circle"
+        [class.active]="currentStep() === step"
+        [class.done]="currentStep() > step"
+      >
+        <i class="pi pi-check text-xs" *ngIf="currentStep() > step"></i>
+        <span *ngIf="currentStep() <= step">{{ step }}</span>
+      </div>
+      <span class="text-sm font-medium step-label" [class.text-primary]="currentStep() === step">
+        <ng-container *ngIf="step === 1">فحص الملف</ng-container>
+        <ng-container *ngIf="step === 2">مطابقة الأقسام</ng-container>
+        <ng-container *ngIf="step === 3">المراجعة والإرسال</ng-container>
+      </span>
+      <i class="pi pi-chevron-left text-slate-400 text-xs" *ngIf="i < 2"></i>
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- STEP 1: UPLOAD & VALIDATION REPORT                                      -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="currentStep() === 1 && selectedFacilityId">
+  <!-- Upload Zone -->
+  <div
+    *ngIf="!validationReport()"
+    class="upload-zone card mt-4!"
+    [class.dragging]="isDragging()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+    dir="rtl"
+  >
+    <div class="flex flex-col items-center gap-4 py-10!">
+      <div class="upload-icon-wrapper">
+        <iconify-icon
+          icon="material-symbols:upload-file-outline"
+          width="56"
+          height="56"
+        ></iconify-icon>
+      </div>
+      <div class="text-center">
+        <p class="text-xl font-bold text-slate-700">اسحب وأفلت ملف Excel هنا</p>
+        <p class="text-slate-500 mt-1!">أو انقر لاختيار الملف من جهازك</p>
+        <p class="text-xs text-slate-400 mt-2!">الأنواع المدعومة: .xlsx, .xls</p>
+      </div>
+      <p-button
+        label="اختر ملف"
+        icon="pi pi-upload"
+        (click)="fileInput.click()"
+        [loading]="isValidating()"
+      />
+      <input
+        #fileInput
+        type="file"
+        accept=".xlsx,.xls"
+        class="hidden"
+        (change)="onFileSelected($event)"
+      />
+
+      <!-- Expected Headers Info -->
+      <div class="headers-hint mt-2!">
+        <p class="text-xs font-semibold text-slate-600 mb-2!">أعمدة الملف المتوقعة:</p>
+        <div class="flex flex-wrap gap-1 justify-center">
+          <span *ngFor="let h of EXCEL_HEADERS" class="header-badge">{{ h }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Validation in progress -->
+  <div *ngIf="isValidating()" class="card mt-4! text-center py-8!" dir="rtl">
+    <iconify-icon
+      icon="svg-spinners:3-dots-scale"
+      width="48"
+      height="48"
+      class="text-primary"
+    ></iconify-icon>
+    <p class="mt-3! text-slate-600 font-medium">جارٍ فحص البيانات وإنشاء التقرير...</p>
+  </div>
+
+  <!-- Validation Report -->
+  <ng-container *ngIf="validationReport() as report">
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4!" dir="rtl">
+      <div class="stat-card total">
+        <iconify-icon icon="material-symbols:table-rows-outline" width="28"></iconify-icon>
+        <div>
+          <p class="stat-value">{{ report.summary.totalRecords }}</p>
+          <p class="stat-label">إجمالي السجلات</p>
+        </div>
+      </div>
+      <div class="stat-card valid">
+        <iconify-icon icon="material-symbols:check-circle-outline" width="28"></iconify-icon>
+        <div>
+          <p class="stat-value">{{ report.summary.validRecords }}</p>
+          <p class="stat-label">سجلات صالحة</p>
+        </div>
+      </div>
+      <div class="stat-card invalid">
+        <iconify-icon icon="material-symbols:cancel-outline" width="28"></iconify-icon>
+        <div>
+          <p class="stat-value">{{ report.summary.invalidRecords }}</p>
+          <p class="stat-label">سجلات غير صالحة</p>
+        </div>
+      </div>
+      <div class="stat-card duplicate">
+        <iconify-icon icon="material-symbols:content-copy-outline" width="28"></iconify-icon>
+        <div>
+          <p class="stat-value">{{ report.summary.duplicates }}</p>
+          <p class="stat-label">مكررات</p>
+        </div>
+      </div>
+      <div class="stat-card null">
+        <iconify-icon icon="material-symbols:block" width="28"></iconify-icon>
+        <div>
+          <p class="stat-value">{{ report.summary.nulls }}</p>
+          <p class="stat-label">حقول مفقودة</p>
+        </div>
+      </div>
+      <div class="stat-card warning">
+        <iconify-icon icon="material-symbols:warning-outline" width="28"></iconify-icon>
+        <div>
+          <p class="stat-value">{{ report.summary.warnings }}</p>
+          <p class="stat-label">تحذيرات</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Filter -->
+    <div class="card mt-4!" dir="rtl">
+      <div class="flex gap-2 mb-4! flex-wrap items-center justify-between">
+        <div class="flex gap-2">
+          <p-button
+            [severity]="activeTab() === 'all' ? 'primary' : 'secondary'"
+            label="جميع السجلات"
+            size="small"
+            (click)="activeTab.set('all')"
+          />
+          <p-button
+            [severity]="activeTab() === 'invalid' ? 'danger' : 'secondary'"
+            label="السجلات الغير صالحة"
+            size="small"
+            [badge]="report.summary.invalidRecords.toString()"
+            badgeSeverity="danger"
+            (click)="activeTab.set('invalid')"
+          />
+          <p-button
+            [severity]="activeTab() === 'warnings' ? 'warn' : 'secondary'"
+            label="التحذيرات"
+            size="small"
+            [badge]="report.summary.warnings.toString()"
+            badgeSeverity="warn"
+            (click)="activeTab.set('warnings')"
+          />
+        </div>
+        <div class="flex gap-2">
+          <p-button
+            label="إعادة التحميل"
+            icon="pi pi-refresh"
+            severity="secondary"
+            size="small"
+            (click)="resetUpload()"
+          />
+          <p-button
+            label="التالي: مطابقة الأقسام"
+            icon="pi pi-arrow-left"
+            size="small"
+            (click)="goToStep2()"
+            [disabled]="report.summary.validRecords === 0"
+          />
+        </div>
+      </div>
+
+      <!-- Rows Table -->
+      <p-table
+        [value]="filteredRows"
+        [paginator]="true"
+        [rows]="15"
+        [rowsPerPageOptions]="[15, 30, 50]"
+        styleClass="p-datatable-sm"
+        dir="rtl"
+      >
+        <ng-template #header>
+          <tr>
+            <th>ت</th>
+            <th>القسم</th>
+            <th>النوع</th>
+            <th>الاسم العلمي</th>
+            <th>الموديل</th>
+            <th>الرقم التسلسلي</th>
+            <th>الحالة الفنية</th>
+            <th>الحالة</th>
+            <th>الملاحظات</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr [class.row-invalid]="!row.isValid">
+            <td>
+              <code>{{ row.rowIndex }}</code>
+            </td>
+            <td>{{ row.excelDepartmentName || '-' }}</td>
+            <td>
+              <p-tag
+                [severity]="itemTypeSeverity(row.itemType)"
+                [value]="itemTypeLabel(row.itemType)"
+              ></p-tag>
+            </td>
+            <td>{{ row.scientificName || '-' }}</td>
+            <td>{{ row.model || '-' }}</td>
+            <td>
+              <code>{{ row.serialNumber || '-' }}</code>
+            </td>
+            <td>
+              <p-tag
+                *ngIf="row.itemType !== 'supply'"
+                [severity]="statusSeverity(row.operationalStatus)"
+                [value]="statusLabel(row.operationalStatus)"
+              ></p-tag>
+              <span *ngIf="row.itemType === 'supply'" class="text-slate-400 text-xs">—</span>
+            </td>
+            <td>
+              <p-tag
+                [severity]="row.isValid ? 'success' : 'danger'"
+                [value]="row.isValid ? 'صالح' : 'غير صالح'"
+              ></p-tag>
+            </td>
+            <td>
+              <div class="flex flex-col gap-1">
+                <span
+                  *ngFor="let err of row.errors"
+                  class="text-xs text-red-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-times-circle text-red-500"></i> {{ err }}
+                </span>
+                <span
+                  *ngFor="let warn of row.warnings"
+                  class="text-xs text-amber-600 flex items-center gap-1"
+                >
+                  <i class="pi pi-exclamation-triangle text-amber-500"></i> {{ warn }}
+                </span>
+                <span
+                  *ngIf="row.errors.length === 0 && row.warnings.length === 0"
+                  class="text-xs text-green-600"
+                >
+                  ✓ بدون ملاحظات
+                </span>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="9" class="text-center text-slate-400 py-6!">
+              لا توجد سجلات في هذا الفلتر
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </ng-container>
+</ng-container>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- STEP 2: DEPARTMENT MATCHING                                             -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="currentStep() === 2">
+  <div class="card mt-4!" dir="rtl">
+    <div class="flex items-center justify-between mb-6!">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">مطابقة الأقسام</h2>
+        <p class="text-sm text-slate-500 mt-1!">
+          طابق كل قسم ورد في ملف Excel مع قسم موجود في المرفق، أو اختر إنشاء قسم جديد.
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <p-button
+          label="رجوع"
+          icon="pi pi-arrow-right"
+          severity="secondary"
+          (click)="goBackToStep1()"
+        />
+        <p-button label="التالي: المراجعة والإرسال" icon="pi pi-arrow-left" (click)="goToStep3()" />
+      </div>
+    </div>
+
+    <!-- Department Mapping Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div *ngFor="let mapping of departmentMappings" class="dept-card">
+        <div class="dept-card-header">
+          <iconify-icon icon="material-symbols:domain" width="20"></iconify-icon>
+          <span class="font-semibold text-slate-700">{{ mapping.excelDepartmentName }}</span>
+          <p-tag
+            class="mr-auto!"
+            [severity]="deptMatchSeverity(mapping)"
+            [value]="deptMatchLabel(mapping)"
+          ></p-tag>
+        </div>
+
+        <div class="dept-card-body">
+          <!-- Match to existing department -->
+          <div class="mb-3!" *ngIf="!mapping.createNew">
+            <label class="text-xs text-slate-500 mb-1! block">ربط بقسم موجود:</label>
+            <p-select
+              [options]="dbDepartments"
+              [(ngModel)]="mapping.mappedDepartmentId"
+              optionLabel="departmentName"
+              optionValue="id"
+              placeholder="اختر قسماً..."
+              [filter]="true"
+              filterBy="departmentName"
+              class="w-full"
+              appendTo="body"
+              (ngModelChange)="onDeptSelected(mapping)"
+            ></p-select>
+          </div>
+
+          <!-- Separator -->
+          <div class="flex items-center gap-2 text-xs text-slate-400 my-2!">
+            <div class="flex-1 border-t border-slate-200"></div>
+            <span>أو</span>
+            <div class="flex-1 border-t border-slate-200"></div>
+          </div>
+
+          <!-- Create new toggle -->
+          <div class="flex items-center gap-2">
+              <!-- <iconify-icon
+                icon="material-symbols:add-circle-outline"
+                width="16"
+                class="inline align-middle ml-1! text-(--k-pimary)"
+              ></iconify-icon> -->
+            <input
+              type="checkbox"
+              [id]="'create_new_' + mapping.excelDepartmentName"
+              [(ngModel)]="mapping.createNew"
+              (ngModelChange)="onCreateNewToggle(mapping)"
+              class="accent-primary"
+            />
+            <label
+              [for]="'create_new_' + mapping.excelDepartmentName"
+              class="text-sm text-slate-600 cursor-pointer select-none"
+            >
+              إنشاء كقسم جديد في المرفق
+            </label>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- STEP 3: REVIEW & SUBMIT                                                 -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="currentStep() === 3">
+  <div class="card mt-4!" dir="rtl">
+    <!-- Summary -->
+    <div class="submit-preview-header mb-6!">
+      <iconify-icon
+        icon="material-symbols:send-and-archive-outline"
+        width="48"
+        class="text-primary"
+      ></iconify-icon>
+      <div>
+        <h2 class="text-xl font-bold text-slate-800">مراجعة بيانات الاستيراد قبل الإرسال</h2>
+        <p class="text-slate-500 mt-1!">
+          سيتم إرسال
+          <strong>{{ validationReport()?.summary?.validRecords ?? 0 }} سجل صالح</strong> من المرفق
+          <strong>{{ selectedFacility?.facilityName }}</strong> للمراجعة من قبل مسؤول النظام.
+        </p>
+      </div>
+    </div>
+
+    <!-- Mapping summary -->
+    <div class="mb-6!">
+      <h3 class="font-semibold text-slate-700 mb-3!">مطابقة الأقسام:</h3>
+      <div class="flex flex-wrap gap-2">
+        <div *ngFor="let m of departmentMappings" class="mapping-chip">
+          <span class="text-slate-600">{{ m.excelDepartmentName }}</span>
+          <iconify-icon
+            icon="material-symbols:arrow-back"
+            width="14"
+            class="text-slate-400"
+          ></iconify-icon>
+          <span class="font-semibold text-primary">
+            {{ m.createNew ? '(قسم جديد)' : getDeptName(m.mappedDepartmentId) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3 justify-start">
+      <p-button
+        label="رجوع"
+        icon="pi pi-arrow-right"
+        severity="secondary"
+        (click)="goBackToStep2()"
+      />
+      <p-button
+        label="إرسال طلب الاستيراد"
+        icon="pi pi-send"
+        [loading]="isSubmitting()"
+        (click)="submitImport()"
+      />
+    </div>
+  </div>
+</ng-container>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- HISTORY (always shown when facility selected)                           -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="card mt-4!" dir="rtl" *ngIf="selectedFacilityId">
+  <h2 class="text-lg font-bold text-slate-800 mb-4!">سجل طلبات الاستيراد للمرفق</h2>
+  <p-table [value]="historyRequests()" styleClass="p-datatable-sm" [paginator]="true" [rows]="10">
+    <ng-template #header>
+      <tr>
+        <th>#</th>
+        <th>المرسل</th>
+        <th>تاريخ الطلب</th>
+        <th>الحالة</th>
+        <th>ملاحظات المراجع</th>
+        <th *ngIf="isAdminOrReviewer">إجراءات</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-req>
+      <tr>
+        <td>
+          <code>{{ req.id }}</code>
+        </td>
+        <td>{{ req.requestedBy }}</td>
+        <td>{{ req.requestDate }}</td>
+        <td>
+          <p-tag
+            [severity]="requestStatusSeverity(req.status)"
+            [value]="requestStatusLabel(req.status)"
+          ></p-tag>
+        </td>
+        <td class="text-sm text-slate-500">{{ req.reviewerNotes || '—' }}</td>
+        <td *ngIf="isAdminOrReviewer">
+          <div class="flex gap-2" *ngIf="req.status === 'PENDING'">
+            <p-button
+              label="موافقة"
+              icon="pi pi-check"
+              severity="success"
+              size="small"
+              (click)="openReviewDialog(req, 'approve')"
+            />
+            <p-button
+              label="رفض"
+              icon="pi pi-times"
+              severity="danger"
+              size="small"
+              (click)="openReviewDialog(req, 'reject')"
+            />
+          </div>
+          <span *ngIf="req.status !== 'PENDING'" class="text-xs text-slate-400">تمت المراجعة</span>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6" class="text-center text-slate-400 py-6!">
+          لا توجد طلبات استيراد سابقة لهذا المرفق
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- ADMIN: PENDING REQUESTS PANEL                                           -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div
+  class="card-shadow card mt-4! p-4!"
+  dir="rtl"
+  *ngIf="isAdminOrReviewer && pendingRequests().length > 0"
+>
+  <div class="flex items-center gap-3 mb-4!">
+    <iconify-icon
+      icon="material-symbols:pending-actions"
+      width="28"
+      class="text-amber-600"
+    ></iconify-icon>
+    <h2 class="text-lg font-bold text-slate-800">طلبات الاستيراد المعلقة</h2>
+    <p-tag severity="warn" [value]="pendingRequests().length.toString() + ' طلب معلق'"></p-tag>
+  </div>
+
+  <p-table [value]="pendingRequests()" styleClass="p-datatable-sm">
+    <ng-template #header>
+      <tr>
+        <th>#</th>
+        <th>المرفق الصحي</th>
+        <th>المرسل</th>
+        <th>تاريخ الطلب</th>
+        <th>إجراءات</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-req>
+      <tr>
+        <td>
+          <code>{{ req.id }}</code>
+        </td>
+        <td>{{ req.facility?.facilityName ?? '—' }}</td>
+        <td>{{ req.requestedBy }}</td>
+        <td>{{ req.requestDate }}</td>
+        <td>
+          <div class="flex gap-2 ">
+            <p-button
+              label="موافقة"
+              icon="pi pi-check"
+              severity="success"
+              size="small"
+              (click)="openReviewDialog(req, 'approve')"
+            />
+            <p-button
+              label="رفض"
+              icon="pi pi-times"
+              severity="danger"
+              size="small"
+              (click)="openReviewDialog(req, 'reject')"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- REVIEW DIALOG                                                           -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<p-dialog
+  [visible]="showReviewDialog()"
+  (visibleChange)="showReviewDialog.set($event)"
+  [modal]="true"
+  [style]="{ width: '780px', maxWidth: '95vw' }"
+  [header]="reviewAction === 'approve' ? 'الموافقة على طلب الاستيراد' : 'رفض طلب الاستيراد'"
+  dir="rtl"
+>
+  <ng-container *ngIf="selectedReviewRequest() as req">
+    <!-- Request Summary -->
+    <div class="review-dialog-summary mb-4!">
+      <div class="flex gap-6 flex-wrap text-sm">
+        <div>
+          <span class="text-slate-500">المرفق:</span>
+          <strong class="mr-1!">{{ req.facility?.facilityName ?? '—' }}</strong>
+        </div>
+        <div>
+          <span class="text-slate-500">المرسل:</span>
+          <strong class="mr-1!">{{ req.requestedBy }}</strong>
+        </div>
+        <div>
+          <span class="text-slate-500">التاريخ:</span>
+          <strong class="mr-1!">{{ req.requestDate }}</strong>
+        </div>
+        <div>
+          <span class="text-slate-500">عدد السجلات:</span>
+          <strong class="mr-1!">{{ req.items?.length ?? 0 }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Department Mappings -->
+    <div class="mb-4!" *ngIf="req.mappings && req.mappings.length > 0">
+      <h4 class="font-semibold text-slate-700 mb-2!">مطابقة الأقسام:</h4>
+      <div class="flex flex-wrap gap-2">
+        <div *ngFor="let m of req.mappings" class="mapping-chip">
+          <span>{{ m.excelDepartmentName }}</span>
+          <iconify-icon
+            icon="material-symbols:arrow-back"
+            width="14"
+            class="text-slate-400"
+          ></iconify-icon>
+          <span class="text-primary font-semibold">
+            {{ m.createNew ? '(قسم جديد)' : 'قسم #' + m.mappedDepartmentId }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Preview Table -->
+    <div *ngIf="req.items && req.items.length > 0" class="mb-4!">
+      <h4 class="font-semibold text-slate-700 mb-2!">معاينة البيانات (أول 10 سجلات):</h4>
+      <p-table [value]="req.items!.slice(0, 10)" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>ت</th>
+            <th>القسم</th>
+            <th>الاسم العلمي</th>
+            <th>النوع</th>
+            <th>الحالة الفنية</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-item>
+          <tr>
+            <td>
+              <code>{{ item.number }}</code>
+            </td>
+            <td>{{ item.excelDepartmentName }}</td>
+            <td>{{ item.scientificName }}</td>
+            <td>
+              <p-tag
+                [severity]="itemTypeSeverity(item.itemType)"
+                [value]="itemTypeLabel(item.itemType)"
+              ></p-tag>
+            </td>
+            <td>
+              <p-tag
+                *ngIf="item.itemType !== 'supply'"
+                [severity]="statusSeverity(item.operationalStatus)"
+                [value]="statusLabel(item.operationalStatus)"
+              ></p-tag>
+              <span *ngIf="item.itemType === 'supply'" class="text-slate-400 text-xs">—</span>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+      <p *ngIf="req.items!.length > 10" class="text-xs text-slate-400 mt-2!">
+        ... و {{ req.items!.length - 10 }} سجل آخر
+      </p>
+    </div>
+
+    <!-- Reviewer Notes -->
+    <div class="mb-2!">
+      <label class="text-sm font-semibold text-slate-700 mb-1! block">
+        {{ reviewAction === 'approve' ? 'ملاحظات الموافقة (اختيارية):' : 'سبب الرفض (مطلوب):' }}
+      </label>
+      <textarea
+        [(ngModel)]="reviewerNotes"
+        rows="3"
+        [placeholder]="reviewAction === 'approve' ? 'أضف ملاحظة للمراجعة...' : 'اكتب سبب الرفض...'"
+        class="w-full border border-slate-300 rounded-lg p-3! text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+        dir="rtl"
+      ></textarea>
+    </div>
+  </ng-container>
+
+  <ng-template #footer>
+    <div class="flex gap-2 justify-end" dir="rtl">
+      <p-button label="إلغاء" severity="secondary" (click)="closeReviewDialog()" />
+      <p-button
+        *ngIf="reviewAction === 'approve'"
+        label="موافقة وتطبيق الاستيراد"
+        icon="pi pi-check"
+        severity="success"
+        (click)="submitReview()"
+      />
+      <p-button
+        *ngIf="reviewAction === 'reject'"
+        label="رفض الطلب"
+        icon="pi pi-times"
+        severity="danger"
+        (click)="submitReview()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>
