@@ -568,7 +568,7 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="serialNumber">الرقم التسلسلي (S/N) *</label>
+        <label for="serialNumber">الرقم التسلسلي (S/N)</label>
         <p-iconfield class="w-full">
           <input
             id="serialNumber"
@@ -624,11 +624,13 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="operationalStatus">الحالة الفنية للجهاز*</label>
+        <label for="operationalStatus">الحالة الفنية للجهاز</label>
         <p-select
           [options]="operationalStatusList"
           optionLabel="name"
           optionValue="value"
+          placeholder="اختر الحالة (اختياري)"
+          [showClear]="true"
           class="w-full h-10!"
           id="operationalStatus"
           [(ngModel)]="currentItem.operationalStatus"
@@ -811,7 +813,7 @@
           </td>
           <td>{{ item.itemType === 'equipment' ? item.model : item.unit }}</td>
           <td>
-            <code *ngIf="item.itemType === 'equipment'">{{ item.serialNumber }}</code>
+            <code *ngIf="item.itemType === 'equipment'">{{ item.serialNumber || '-' }}</code>
             <span *ngIf="item.itemType === 'supply'">{{ item.quantity }} {{ item.unit }}</span>
           </td>
           <td>{{ item.manufacturer || '-' }}</td>
@@ -821,7 +823,7 @@
               [severity]="operationalStatusMap.get(item.operationalStatus)?.severity || 'secondary'"
             >
               {{
-                operationalStatusMap.get(item.operationalStatus)?.label || item.operationalStatus
+                operationalStatusMap.get(item.operationalStatus)?.label || item.operationalStatus || '-'
               }}
             </p-tag>
             <span *ngIf="item.itemType === 'supply'" class="text-sm text-gray-500">

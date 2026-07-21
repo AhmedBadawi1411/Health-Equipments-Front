@@ -34,6 +34,9 @@ export interface IDashboardMetrics {
   inventoryStatusDistribution?: { name: string; value: number; color: string }[];
   monthlyNeedRequests: { month: string; count: number; equipmentCount?: number; consumablesCount?: number }[];
   overallAssetAvailability: number;
+  statusCoveragePercentage?: number;
+  equipmentWithStatusCount?: number;
+  totalEquipmentCount?: number;
   recentActivities: IRecentActivity[];
 }
 

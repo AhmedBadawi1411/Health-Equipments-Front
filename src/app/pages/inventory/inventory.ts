@@ -289,7 +289,7 @@ export class InventoryComponent implements OnInit {
       manufacturingDate: '',
       supplierCompany: '',
       installationDate: '',
-      operationalStatus: 'Fully Functional',
+      operationalStatus: null as string | null,
       unit: '',
       quantity: null as number | null,
       minimumStock: null as number | null,
@@ -391,7 +391,7 @@ export class InventoryComponent implements OnInit {
             manufacturingDate: x.manufacturingDate || '',
             supplierCompany: x.supplierCompany,
             installationDate: x.installationDate,
-            operationalStatus: x.operationalStatus || 'Fully Functional',
+            operationalStatus: x.operationalStatus || null,
             unit: x.unit || '',
             quantity: x.quantity ?? null,
             minimumStock: x.minimumStock ?? null,
@@ -458,7 +458,7 @@ export class InventoryComponent implements OnInit {
       !this.surveyDepartmentId() ||
       !this.currentItem.scientificName;
     if (this.currentItem.itemType === 'equipment') {
-      return base || !this.currentItem.model || !this.currentItem.serialNumber;
+      return base || !this.currentItem.model;
     }
     return base || !this.currentItem.unit;
   }
@@ -471,11 +471,12 @@ export class InventoryComponent implements OnInit {
 
     const currentList = [...this.surveyItems()];
 
-    if (this.currentItem.itemType === 'equipment') {
+    if (this.currentItem.itemType === 'equipment' && this.currentItem.serialNumber?.trim()) {
       const hasDuplicate = currentList.some(
         (x, idx) =>
           idx !== this.editingItemIndex &&
           x.itemType === 'equipment' &&
+          x.serialNumber &&
           x.serialNumber.trim().toLowerCase() ===
             this.currentItem.serialNumber.trim().toLowerCase(),
       );

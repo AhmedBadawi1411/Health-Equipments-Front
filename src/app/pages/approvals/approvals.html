@@ -207,7 +207,7 @@
               <td>{{ item.department?.departmentName || '-' }}</td>
               <td>{{ item.model || '-' }}</td>
               <td>
-                <span *ngIf="item.itemType !== 'supply'">{{ item.serialNumber }}</span>
+                <span *ngIf="item.itemType !== 'supply'">{{ item.serialNumber || '-' }}</span>
                 <span *ngIf="item.itemType === 'supply'">{{ item.quantity }} {{ item.unit }}</span>
               </td>
               <td>{{ item.manufacturer }}</td>
@@ -221,7 +221,8 @@
                 >
                   {{
                     operationalStatusMap.get(item.operationalStatus)?.label ||
-                      item.operationalStatus
+                      item.operationalStatus ||
+                      '-'
                   }}
                 </p-tag>
                 <span *ngIf="item.itemType === 'supply'" class="text-sm text-gray-500">

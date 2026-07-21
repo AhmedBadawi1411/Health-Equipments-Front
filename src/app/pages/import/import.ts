@@ -2,6 +2,7 @@ import {
   Component,
   OnInit,
   signal,
+  computed,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   CUSTOM_ELEMENTS_SCHEMA,
@@ -29,6 +30,16 @@ import {
 } from '../../services/import-service';
 import 'iconify-icon';
 
+export interface UniqueExcelDepartment {
+  originalName: string;
+  currentName: string;
+  count: number;
+  mappedDepartmentId: number | null;
+  createNew: boolean;
+  addedToDb?: boolean;
+  isAddingToDb?: boolean;
+}
+
 @Component({
   selector: 'app-import',
   standalone: true,
@@ -55,6 +66,7 @@ export class ImportComponent implements OnInit {
 
   // ── Step management ──────────────────────────────────────────────────────
   currentStep = signal<1 | 2 | 3>(1);
+  uniqueExcelDepartments = signal<UniqueExcelDepartment[]>([]);
 
   // ── Facility selection ───────────────────────────────────────────────────
   facilities: Facility[] = [];
@@ -122,10 +134,14 @@ export class ImportComponent implements OnInit {
 
   readonly STATUS_MAP: Record<string, string> = {
     '1': 'Fully Functional',
-    '2': 'Functional & Needs Supplies',
-    '3': 'Out of Service & Needs Maintenance',
-    '4': 'Functional but Inactive',
-    '5': 'Scrapped',
+    'يعمل': 'Fully Functional',
+    '0': 'Out of Service & Needs Maintenance',
+    'لا يعمل': 'Out of Service & Needs Maintenance',
+    'Fully Functional': 'Fully Functional',
+    'Functional & Needs Supplies': 'Functional & Needs Supplies',
+    'Out of Service & Needs Maintenance': 'Out of Service & Needs Maintenance',
+    'Functional but Inactive': 'Functional but Inactive',
+    'Scrapped': 'Scrapped',
   };
 
   readonly STATUS_SEVERITY_MAP: Record<string, 'success' | 'info' | 'danger' | 'warn' | 'secondary'> = {
@@ -279,8 +295,23 @@ export class ImportComponent implements OnInit {
           this.parsedRows = rawRows.map((row: any) => {
             const mapped: any = {};
             for (const [arabicKey, englishKey] of Object.entries(this.HEADER_MAP)) {
-              const val = row[arabicKey];
-              mapped[englishKey] = val !== undefined && val !== null ? val : '';
+              let val = row[arabicKey];
+              if (val !== undefined && val !== null) {
+                let sVal = String(val).trim();
+                if (sVal === '/') sVal = '';
+                val = sVal;
+              } else {
+                val = '';
+              }
+              if (englishKey === 'itemType') {
+                const s = val.toString().toLowerCase();
+                if (s === '1' || s === 'supply' || s === 'consumable' || s === 'مستلزمات' || s === 'مستلزم') {
+                  val = 'supply';
+                } else {
+                  val = 'equipment';
+                }
+              }
+              mapped[englishKey] = val;
             }
             return mapped;
           });
@@ -326,6 +357,95 @@ export class ImportComponent implements OnInit {
   }
 
   // ── Step navigation ──────────────────────────────────────────────────────
+  initUniqueExcelDepartments() {
+    const map = new Map<string, number>();
+    for (const row of this.parsedRows) {
+      const raw = (row.excelDepartmentName || '').toString().trim();
+      if (raw) {
+        map.set(raw, (map.get(raw) || 0) + 1);
+      }
+    }
+
+    const list: UniqueExcelDepartment[] = Array.from(map.entries()).map(([name, count]) => {
+      const dbMatch = this.dbDepartments.find(
+        (d) => d.departmentName.trim().toLowerCase() === name.toLowerCase()
+      );
+      return {
+        originalName: name,
+        currentName: name,
+        count,
+        mappedDepartmentId: dbMatch ? dbMatch.id : null,
+        createNew: !dbMatch,
+        addedToDb: !!dbMatch,
+        isAddingToDb: false,
+      };
+    });
+    this.uniqueExcelDepartments.set(list);
+  }
+
+  onDeptNameChanged(item: UniqueExcelDepartment) {
+    const trimmed = item.currentName.trim().toLowerCase();
+    const dbMatch = this.dbDepartments.find(
+      (d) => d.departmentName.trim().toLowerCase() === trimmed
+    );
+    if (dbMatch) {
+      item.mappedDepartmentId = dbMatch.id;
+      item.createNew = false;
+      item.addedToDb = true;
+    } else {
+      item.mappedDepartmentId = null;
+      item.createNew = true;
+      item.addedToDb = false;
+    }
+  }
+
+  addDeptToDb(dept: UniqueExcelDepartment) {
+    if (!this.selectedFacilityId || !dept.currentName.trim()) return;
+    dept.isAddingToDb = true;
+    this.healthcareService.createDepartment(Number(this.selectedFacilityId), dept.currentName.trim()).subscribe({
+      next: (res: any) => {
+        dept.isAddingToDb = false;
+        dept.addedToDb = true;
+        dept.createNew = false;
+        if (res.data?.id) {
+          dept.mappedDepartmentId = res.data.id;
+        }
+        this.toast.add({
+          severity: 'success',
+          summary: 'تمت الإضافة',
+          detail: `تمت إضافة قسم "${dept.currentName.trim()}" إلى قاعدة البيانات بنجاح`,
+        });
+        this.loadDepartments();
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        dept.isAddingToDb = false;
+        this.toast.add({
+          severity: 'error',
+          summary: 'خطأ',
+          detail: err?.error?.message || 'فشل إضافة القسم إلى قاعدة البيانات',
+        });
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  deleteRawDepartment(dept: UniqueExcelDepartment) {
+    const targetName = dept.originalName;
+    this.parsedRows = this.parsedRows.filter(
+      (row) => (row.excelDepartmentName || '').toString().trim() !== targetName.trim()
+    );
+    this.uniqueExcelDepartments.update((list) =>
+      list.filter((item) => item.originalName !== targetName)
+    );
+    this.toast.add({
+      severity: 'info',
+      summary: 'تم الحذف',
+      detail: `تم حذف قسم "${dept.currentName}" واستبعاد السجلات المرتبطة به`,
+    });
+    this.cdr.markForCheck();
+  }
+
   goToStep2() {
     const report = this.validationReport();
     if (!report) return;
@@ -333,6 +453,7 @@ export class ImportComponent implements OnInit {
       this.toast.add({ severity: 'warn', summary: 'لا يوجد سجلات صالحة', detail: 'لا يوجد أي سجل صالح لإرساله' });
       return;
     }
+    this.initUniqueExcelDepartments();
     this.currentStep.set(2);
   }
 
@@ -341,19 +462,54 @@ export class ImportComponent implements OnInit {
   }
 
   goToStep3() {
-    // Validate all department mappings are resolved
-    const unresolved = this.departmentMappings.filter(
-      (m) => !m.createNew && !m.mappedDepartmentId
-    );
+    const list = this.uniqueExcelDepartments();
+    if (list.length === 0) {
+      this.toast.add({ severity: 'warn', summary: 'لا يوجد أقسام', detail: 'تم استبعاد جميع الأقسام' });
+      return;
+    }
+
+    const unresolved = list.filter((item) => !item.createNew && !item.mappedDepartmentId);
     if (unresolved.length > 0) {
       this.toast.add({
         severity: 'warn',
         summary: 'أقسام غير مطابقة',
-        detail: `يجب مطابقة ${unresolved.length} قسم أو اختيار إنشائه كقسم جديد`,
+        detail: `يجب مطابقة ${unresolved.length} قسم بأسماء الأقسام بالمنشأة أو اختيار إنشائه كقسم جديد`,
       });
       return;
     }
-    this.currentStep.set(3);
+
+    const nameMap = new Map<string, string>();
+    for (const item of list) {
+      nameMap.set(item.originalName, item.currentName.trim());
+    }
+
+    this.parsedRows.forEach((row) => {
+      const orig = (row.excelDepartmentName || '').toString().trim();
+      if (nameMap.has(orig)) {
+        row.excelDepartmentName = nameMap.get(orig);
+      }
+    });
+
+    this.departmentMappings = list.map((item) => ({
+      excelDepartmentName: item.currentName.trim(),
+      mappedDepartmentId: item.mappedDepartmentId,
+      createNew: item.createNew,
+    }));
+
+    this.isValidating.set(true);
+    this.importService.validateItems(Number(this.selectedFacilityId), this.parsedRows).subscribe({
+      next: (res) => {
+        this.validationReport.set(res.data);
+        this.isValidating.set(false);
+        this.currentStep.set(3);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.isValidating.set(false);
+        this.cdr.markForCheck();
+        this.toast.add({ severity: 'error', summary: 'خطأ', detail: 'فشل تكييف بيانات الأقسام' });
+      },
+    });
   }
 
   goBackToStep2() {
@@ -454,14 +610,14 @@ export class ImportComponent implements OnInit {
   }
 
   // ── Validation report helpers ────────────────────────────────────────────
-  get filteredRows(): ImportRowResult[] {
+  readonly filteredRows = computed<ImportRowResult[]>(() => {
     const report = this.validationReport();
     if (!report) return [];
     const tab = this.activeTab();
     if (tab === 'invalid') return report.rows.filter((r) => !r.isValid);
     if (tab === 'warnings') return report.rows.filter((r) => r.warnings.length > 0);
     return report.rows;
-  }
+  });
 
   statusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     return this.STATUS_SEVERITY_MAP[status] ?? 'secondary';

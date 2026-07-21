@@ -18,10 +18,11 @@ import { HealthcareService, Facility } from '../../services/healthcare.service';
 
 const OPERATIONAL_STATUS_ARABIC: Record<string, string> = {
   'Fully Functional': 'يعمل بكفاءة',
-  'Functional & Needs Supplies': 'يعمل ويحتاج مستلزمات',
   'Out of Service & Needs Maintenance': 'خارج الخدمة ويحتاج صيانة',
+  'Functional & Needs Supplies': 'يعمل ويحتاج مستلزمات',
   'Functional but Inactive': 'يعمل ولكنه غير نشط',
   'Scrapped': 'تالف',
+  'Unspecified': 'غير محدد',
 };
 
 const INVENTORY_STATUS_ARABIC: Record<string, string> = {
@@ -42,6 +43,7 @@ const INVENTORY_STATUS_ARABIC: Record<string, string> = {
 export class Home implements OnInit, OnDestroy {
   selectedRegionId: string | undefined = undefined;
   selectedFacilityId: number | undefined = undefined;
+  statusCoverageNote: string = '';
   private liveSubscription: Subscription | null = null;
 
   today = new Date().toLocaleDateString('ar-LY', {
@@ -338,6 +340,15 @@ export class Home implements OnInit, OnDestroy {
         },
       ],
     };
+
+    const pct = metrics.statusCoveragePercentage ?? 0;
+    const withStatus = metrics.equipmentWithStatusCount ?? 0;
+    const totalEq = metrics.totalEquipmentCount ?? 0;
+    if (totalEq > 0) {
+      this.statusCoverageNote = `ملاحظة: النسبة المحسوبة مبنية على ${pct}% من الأجهزة المسجلة (${withStatus} من أصل ${totalEq} جهاز تم تحديد حالتها الفنية)`;
+    } else {
+      this.statusCoverageNote = '';
+    }
 
     // 6. Update Recent Activities
     this.recentActivities = metrics.recentActivities || [];
