@@ -268,7 +268,7 @@ export class ImportComponent implements OnInit {
 
   processFile(file: File) {
     if (!this.selectedFacilityId) {
-      this.toast.add({ severity: 'warn', summary: 'تحذير', detail: 'يرجى اختيار المرفق الصحي أولاً' });
+      this.toast.add({ severity: 'warn', summary: 'تحذير', detail: 'يرجى اختيار المرفق الصحي أولا' });
       return;
     }
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
@@ -568,40 +568,70 @@ export class ImportComponent implements OnInit {
   }
 
   // ── Review dialog ────────────────────────────────────────────────────────
-  openReviewDialog(request: ImportRequest, action: 'approve' | 'reject') {
+  openReviewModal(request: ImportRequest, defaultAction: 'approve' | 'reject' | 'view' = 'view') {
     this.importService.getById(request.id).subscribe({
       next: (res) => {
         this.selectedReviewRequest.set(res.data);
-        this.reviewAction = action;
-        this.reviewerNotes = '';
+        this.reviewAction = defaultAction === 'view' ? 'approve' : defaultAction;
+        this.reviewerNotes = res.data?.reviewerNotes || '';
         this.showReviewDialog.set(true);
         this.cdr.markForCheck();
+      },
+      error: () => {
+        this.toast.add({ severity: 'error', summary: 'خطأ', detail: 'فشل تحميل تفاصيل طلب الاستيراد' });
       },
     });
   }
 
-  submitReview() {
+  openReviewDialog(request: ImportRequest, action: 'approve' | 'reject') {
+    this.openReviewModal(request, action);
+  }
+
+  get reviewKpis() {
+    const req = this.selectedReviewRequest();
+    if (!req || !req.items) return null;
+    const items = req.items;
+    const total = items.length;
+    const equipment = items.filter((i) => i.itemType === 'equipment').length;
+    const supply = items.filter((i) => i.itemType === 'supply').length;
+    const functional = items.filter((i) => i.operationalStatus === 'Fully Functional').length;
+    const outOfService = items.filter((i) => i.operationalStatus === 'Out of Service & Needs Maintenance').length;
+    const unspecified = items.filter((i) => !i.operationalStatus).length;
+    return { total, equipment, supply, functional, outOfService, unspecified };
+  }
+
+  submitReviewAction(action: 'approve' | 'reject') {
     const req = this.selectedReviewRequest();
     if (!req) return;
-    this.importService.reviewRequest(req.id, this.reviewAction, this.reviewerNotes).subscribe({
+    if (action === 'reject' && !this.reviewerNotes.trim()) {
+      this.toast.add({ severity: 'warn', summary: 'تنبيه', detail: 'يرجى كتابة سبب الرفض في ملاحظات المراجعة' });
+      return;
+    }
+
+    this.importService.reviewRequest(req.id, action, this.reviewerNotes).subscribe({
       next: () => {
         this.showReviewDialog.set(false);
         this.selectedReviewRequest.set(null);
         this.toast.add({
           severity: 'success',
-          summary: this.reviewAction === 'approve' ? 'تمت الموافقة' : 'تم الرفض',
+          summary: action === 'approve' ? 'تمت الموافقة' : 'تم الرفض',
           detail:
-            this.reviewAction === 'approve'
+            action === 'approve'
               ? 'تمت الموافقة على طلب الاستيراد وتطبيقه بنجاح'
               : 'تم رفض طلب الاستيراد',
         });
         this.loadPendingRequests();
+        this.loadHistory();
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.toast.add({ severity: 'error', summary: 'خطأ', detail: 'فشل في مراجعة الطلب' });
+      error: (err: any) => {
+        this.toast.add({ severity: 'error', summary: 'خطأ', detail: err?.error?.message || 'فشل في مراجعة الطلب' });
       },
     });
+  }
+
+  submitReview() {
+    this.submitReviewAction(this.reviewAction);
   }
 
   closeReviewDialog() {

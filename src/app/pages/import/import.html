@@ -108,7 +108,7 @@
       height="48"
       class="text-primary"
     ></iconify-icon>
-    <p class="mt-3! text-slate-600 font-medium">جارٍ فحص البيانات وإنشاء التقرير...</p>
+    <p class="mt-3! text-slate-600 font-medium">جار فحص البيانات وإنشاء التقرير...</p>
   </div>
 
   <!-- Validation Report -->
@@ -302,7 +302,7 @@
       <div>
         <h2 class="text-lg font-bold text-slate-800">تنقية ومطابقة الأقسام</h2>
         <p class="text-sm text-slate-500 mt-1!">
-          تنقية أسماء الأقسام المستخرجة من Excel ومطابقتها بأقسام المنشأة، أو إضافتها فوراً لقاعدة البيانات.
+          تنقية أسماء الأقسام المستخرجة من Excel ومطابقتها بأقسام المنشأة، أو إضافتها فورا لقاعدة البيانات.
         </p>
       </div>
       <div class="flex gap-2">
@@ -356,7 +356,7 @@
               [(ngModel)]="item.mappedDepartmentId"
               optionLabel="departmentName"
               optionValue="id"
-              placeholder="اختر قسماً..."
+              placeholder="اختر قسما..."
               [filter]="true"
               filterBy="departmentName"
               class="w-full"
@@ -494,24 +494,32 @@
           ></p-tag>
         </td>
         <td class="text-sm text-slate-500">{{ req.reviewerNotes || '—' }}</td>
-        <td *ngIf="isAdminOrReviewer">
-          <div class="flex gap-2" *ngIf="req.status === 'PENDING'">
+        <td>
+          <div class="flex gap-2 items-center">
             <p-button
-              label="موافقة"
-              icon="pi pi-check"
-              severity="success"
+              label="عرض التقرير"
+              icon="pi pi-eye"
+              severity="secondary"
               size="small"
-              (click)="openReviewDialog(req, 'approve')"
+              (click)="openReviewModal(req, 'view')"
             />
-            <p-button
-              label="رفض"
-              icon="pi pi-times"
-              severity="danger"
-              size="small"
-              (click)="openReviewDialog(req, 'reject')"
-            />
+            <ng-container *ngIf="isAdminOrReviewer && req.status === 'PENDING'">
+              <p-button
+                label="موافقة"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+                (click)="openReviewModal(req, 'approve')"
+              />
+              <p-button
+                label="رفض"
+                icon="pi pi-times"
+                severity="danger"
+                size="small"
+                (click)="openReviewModal(req, 'reject')"
+              />
+            </ng-container>
           </div>
-          <span *ngIf="req.status !== 'PENDING'" class="text-xs text-slate-400">تمت المراجعة</span>
         </td>
       </tr>
     </ng-template>
@@ -562,20 +570,27 @@
         <td>{{ req.requestedBy }}</td>
         <td>{{ req.requestDate }}</td>
         <td>
-          <div class="flex gap-2 ">
+          <div class="flex gap-2 items-center">
+            <p-button
+              label="مراجعة البيانات والتقرير"
+              icon="pi pi-search"
+              severity="primary"
+              size="small"
+              (click)="openReviewModal(req, 'view')"
+            />
             <p-button
               label="موافقة"
               icon="pi pi-check"
               severity="success"
               size="small"
-              (click)="openReviewDialog(req, 'approve')"
+              (click)="openReviewModal(req, 'approve')"
             />
             <p-button
               label="رفض"
               icon="pi pi-times"
               severity="danger"
               size="small"
-              (click)="openReviewDialog(req, 'reject')"
+              (click)="openReviewModal(req, 'reject')"
             />
           </div>
         </td>
@@ -591,77 +606,114 @@
   [visible]="showReviewDialog()"
   (visibleChange)="showReviewDialog.set($event)"
   [modal]="true"
-  [style]="{ width: '780px', maxWidth: '95vw' }"
-  [header]="reviewAction === 'approve' ? 'الموافقة على طلب الاستيراد' : 'رفض طلب الاستيراد'"
+  [style]="{ width: '960px', maxWidth: '95vw' }"
+  header="مراجعة وتدقيق طلب الاستيراد"
   dir="rtl"
 >
   <ng-container *ngIf="selectedReviewRequest() as req">
-    <!-- Request Summary -->
-    <div class="review-dialog-summary mb-4!">
-      <div class="flex gap-6 flex-wrap text-sm">
+    <!-- Header Banner -->
+    <div class="p-4! bg-slate-50 border border-slate-200 rounded-xl mb-4! flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-3">
+        <iconify-icon icon="material-symbols:analytics-outline" width="32" class="text-primary"></iconify-icon>
         <div>
-          <span class="text-slate-500">المرفق:</span>
-          <strong class="mr-1!">{{ req.facility?.facilityName ?? '—' }}</strong>
-        </div>
-        <div>
-          <span class="text-slate-500">المرسل:</span>
-          <strong class="mr-1!">{{ req.requestedBy }}</strong>
-        </div>
-        <div>
-          <span class="text-slate-500">التاريخ:</span>
-          <strong class="mr-1!">{{ req.requestDate }}</strong>
-        </div>
-        <div>
-          <span class="text-slate-500">عدد السجلات:</span>
-          <strong class="mr-1!">{{ req.items?.length ?? 0 }}</strong>
+          <h3 class="font-bold text-slate-800 text-base">طلب استيراد رقم #{{ req.id }}</h3>
+          <p class="text-xs text-slate-500 mt-0.5">المرفق: {{ req.facility?.facilityName ?? '—' }} | المرسل: {{ req.requestedBy }} | التاريخ: {{ req.requestDate }}</p>
         </div>
       </div>
+      <p-tag [severity]="requestStatusSeverity(req.status)" [value]="requestStatusLabel(req.status)"></p-tag>
     </div>
+
+    <!-- KPIs Summary Grid -->
+    <ng-container *ngIf="reviewKpis as kpi">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4!">
+        <div class="stat-card total p-3!">
+          <div>
+            <p class="stat-value text-lg!">{{ kpi.total }}</p>
+            <p class="stat-label text-xs!">إجمالي السجلات</p>
+          </div>
+        </div>
+        <div class="stat-card valid p-3!">
+          <div>
+            <p class="stat-value text-lg!">{{ kpi.equipment }}</p>
+            <p class="stat-label text-xs!">أجهزة ومعدات</p>
+          </div>
+        </div>
+        <div class="stat-card warning p-3!">
+          <div>
+            <p class="stat-value text-lg!">{{ kpi.supply }}</p>
+            <p class="stat-label text-xs!">مستلزمات طبية</p>
+          </div>
+        </div>
+        <div class="stat-card valid p-3!">
+          <div>
+            <p class="stat-value text-lg!">{{ kpi.functional }}</p>
+            <p class="stat-label text-xs!">يعمل بكفاءة</p>
+          </div>
+        </div>
+        <div class="stat-card invalid p-3!">
+          <div>
+            <p class="stat-value text-lg!">{{ kpi.outOfService }}</p>
+            <p class="stat-label text-xs!">يحتاج صيانة</p>
+          </div>
+        </div>
+        <div class="stat-card null p-3!">
+          <div>
+            <p class="stat-value text-lg!">{{ kpi.unspecified }}</p>
+            <p class="stat-label text-xs!">غير محدد الحالة</p>
+          </div>
+        </div>
+      </div>
+    </ng-container>
 
     <!-- Department Mappings -->
     <div class="mb-4!" *ngIf="req.mappings && req.mappings.length > 0">
-      <h4 class="font-semibold text-slate-700 mb-2!">مطابقة الأقسام:</h4>
+      <h4 class="font-semibold text-slate-700 mb-2! text-sm">مطابقة الأقسام بالمنشأة:</h4>
       <div class="flex flex-wrap gap-2">
-        <div *ngFor="let m of req.mappings" class="mapping-chip">
+        <div *ngFor="let m of req.mappings" class="mapping-chip text-xs">
           <span>{{ m.excelDepartmentName }}</span>
-          <iconify-icon
-            icon="material-symbols:arrow-back"
-            width="14"
-            class="text-slate-400"
-          ></iconify-icon>
+          <iconify-icon icon="material-symbols:arrow-back" width="14" class="text-slate-400"></iconify-icon>
           <span class="text-primary font-semibold">
-            {{ m.createNew ? '(قسم جديد)' : 'قسم #' + m.mappedDepartmentId }}
+            {{ m.createNew ? '(قسم جديد)' : getDeptName(m.mappedDepartmentId) }}
           </span>
         </div>
       </div>
     </div>
 
-    <!-- Items Preview Table -->
+    <!-- Full Data Preview Table -->
     <div *ngIf="req.items && req.items.length > 0" class="mb-4!">
-      <h4 class="font-semibold text-slate-700 mb-2!">معاينة البيانات (أول 10 سجلات):</h4>
-      <p-table [value]="req.items!.slice(0, 10)" styleClass="p-datatable-sm">
+      <div class="flex items-center justify-between mb-2!">
+        <h4 class="font-semibold text-slate-700 text-sm">تفاصيل بيانات العناصر المرفقة ({{ req.items.length }} عنصر):</h4>
+      </div>
+      <p-table
+        [value]="req.items"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50, 100]"
+        styleClass="p-datatable-sm"
+        dir="rtl"
+      >
         <ng-template #header>
           <tr>
             <th>ت</th>
             <th>القسم</th>
-            <th>الاسم العلمي</th>
             <th>النوع</th>
+            <th>الاسم العلمي</th>
+            <th>الموديل</th>
+            <th>الرقم التسلسلي</th>
             <th>الحالة الفنية</th>
+            <th>الكمية</th>
           </tr>
         </ng-template>
         <ng-template #body let-item>
           <tr>
-            <td>
-              <code>{{ item.number }}</code>
-            </td>
+            <td><code>{{ item.number }}</code></td>
             <td>{{ item.excelDepartmentName }}</td>
-            <td>{{ item.scientificName }}</td>
             <td>
-              <p-tag
-                [severity]="itemTypeSeverity(item.itemType)"
-                [value]="itemTypeLabel(item.itemType)"
-              ></p-tag>
+              <p-tag [severity]="itemTypeSeverity(item.itemType)" [value]="itemTypeLabel(item.itemType)"></p-tag>
             </td>
+            <td>{{ item.scientificName }}</td>
+            <td>{{ item.model || '-' }}</td>
+            <td><code>{{ item.serialNumber || '-' }}</code></td>
             <td>
               <p-tag
                 *ngIf="item.itemType !== 'supply'"
@@ -670,46 +722,45 @@
               ></p-tag>
               <span *ngIf="item.itemType === 'supply'" class="text-slate-400 text-xs">—</span>
             </td>
+            <td>{{ item.quantity ?? '-' }}</td>
           </tr>
         </ng-template>
       </p-table>
-      <p *ngIf="req.items!.length > 10" class="text-xs text-slate-400 mt-2!">
-        ... و {{ req.items!.length - 10 }} سجل آخر
-      </p>
     </div>
 
     <!-- Reviewer Notes -->
     <div class="mb-2!">
       <label class="text-sm font-semibold text-slate-700 mb-1! block">
-        {{ reviewAction === 'approve' ? 'ملاحظات الموافقة (اختيارية):' : 'سبب الرفض (مطلوب):' }}
+        ملاحظات المراجعة والاعتماد:
       </label>
       <textarea
         [(ngModel)]="reviewerNotes"
         rows="3"
-        [placeholder]="reviewAction === 'approve' ? 'أضف ملاحظة للمراجعة...' : 'اكتب سبب الرفض...'"
+        placeholder="اكتب ملاحظاتك هنا (مطلوبة عند الرفض)..."
         class="w-full border border-slate-300 rounded-lg p-3! text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
         dir="rtl"
+        [readonly]="req.status !== 'PENDING' || !isAdminOrReviewer"
       ></textarea>
     </div>
   </ng-container>
 
   <ng-template #footer>
-    <div class="flex gap-2 justify-end" dir="rtl">
-      <p-button label="إلغاء" severity="secondary" (click)="closeReviewDialog()" />
-      <p-button
-        *ngIf="reviewAction === 'approve'"
-        label="موافقة وتطبيق الاستيراد"
-        icon="pi pi-check"
-        severity="success"
-        (click)="submitReview()"
-      />
-      <p-button
-        *ngIf="reviewAction === 'reject'"
-        label="رفض الطلب"
-        icon="pi pi-times"
-        severity="danger"
-        (click)="submitReview()"
-      />
+    <div class="flex gap-2 justify-between items-center w-full" dir="rtl">
+      <p-button label="إغلاق" severity="secondary" (click)="closeReviewDialog()" />
+      <div class="flex gap-2" *ngIf="selectedReviewRequest()?.status === 'PENDING' && isAdminOrReviewer">
+        <p-button
+          label="رفض الطلب"
+          icon="pi pi-times"
+          severity="danger"
+          (click)="submitReviewAction('reject')"
+        />
+        <p-button
+          label="موافقة واعتماد الحصر"
+          icon="pi pi-check"
+          severity="success"
+          (click)="submitReviewAction('approve')"
+        />
+      </div>
     </div>
   </ng-template>
 </p-dialog>

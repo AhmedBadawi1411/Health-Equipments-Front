@@ -551,7 +551,7 @@ export class ConsumablesNeedsComponent implements OnInit {
 
     const hasPdf = this.selectedPdfBase64 || (this.viewMode() === 'edit' && this.selectedRequest?.pdfPath);
     if (!hasPdf) {
-      this.toast.add({ severity: 'warn', summary: 'تنبيه', detail: 'يرجى إرفاق ملف طلب الاحتياج الموقع بصيغة PDF أولاً' });
+      this.toast.add({ severity: 'warn', summary: 'تنبيه', detail: 'يرجى إرفاق ملف طلب الاحتياج الموقع بصيغة PDF أولا' });
       return;
     }
 

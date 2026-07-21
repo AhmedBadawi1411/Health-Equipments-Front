@@ -240,7 +240,7 @@ export class ApprovalsComponent implements OnInit {
 
   confirmReject() {
     if (!this.rejectNotes.trim()) {
-      this.showToast('يرجى كتابة ملاحظات المراجعة أولاً للتوضيح للمستخدم', 'warning');
+      this.showToast('يرجى كتابة ملاحظات المراجعة أولا للتوضيح للمستخدم', 'warning');
       return;
     }
     this.healthcareService.updateFacilityStatus(this.selectedFacilityIdForReject, 'REJECTED', this.rejectNotes).subscribe({
